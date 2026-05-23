@@ -1056,17 +1056,25 @@
           : playerCover.classList.remove("spinning");
       }
 
-      /* Tap đầu tiên bất kỳ đâu → bật nhạc */
-      function unlockAudio(e) {
+      function unlockAudio() {
         document.removeEventListener("click", unlockAudio);
         document.removeEventListener("touchstart", unlockAudio);
-        audio
-          .play()
-          .then(() => setPlaying(true))
-          .catch(() => {});
+        // Load trước rồi play đồng bộ trong event
+        audio.load();
+        const tryPlay = () => {
+          audio
+            .play()
+            .then(() => setPlaying(true))
+            .catch(() => {});
+        };
+        if (audio.readyState >= 2) {
+          tryPlay();
+        } else {
+          audio.addEventListener("canplay", tryPlay, { once: true });
+        }
       }
-      document.addEventListener("click", unlockAudio, { passive: true });
-      document.addEventListener("touchstart", unlockAudio, { passive: true });
+      document.addEventListener("click", unlockAudio);
+      document.addEventListener("touchstart", unlockAudio);
 
       function togglePlay() {
         if (audio.paused) {
