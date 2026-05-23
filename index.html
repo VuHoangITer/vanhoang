@@ -793,6 +793,21 @@
     <div class="cursor" id="cursor"></div>
     <div class="cursor-ring" id="cursorRing"></div>
 
+    <!-- OVERLAY -->
+    <div id="tapOverlay">
+      <div class="tap-ring">
+        <div class="tap-btn">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5,3 19,12 5,21" />
+          </svg>
+        </div>
+      </div>
+      <div class="tap-label">
+        <span>Tap to listen</span>
+        vào trang — nhạc sẽ tự phát
+      </div>
+    </div>
+
     <nav>
       <span class="nav-logo">vanhoangg</span>
       <ul class="nav-links">
@@ -1056,25 +1071,20 @@
           : playerCover.classList.remove("spinning");
       }
 
-      function unlockAudio() {
-        document.removeEventListener("click", unlockAudio);
-        document.removeEventListener("touchstart", unlockAudio);
-        // Load trước rồi play đồng bộ trong event
-        audio.load();
-        const tryPlay = () => {
-          audio
-            .play()
-            .then(() => setPlaying(true))
-            .catch(() => {});
-        };
-        if (audio.readyState >= 2) {
-          tryPlay();
-        } else {
-          audio.addEventListener("canplay", tryPlay, { once: true });
-        }
-      }
-      document.addEventListener("click", unlockAudio);
-      document.addEventListener("touchstart", unlockAudio);
+      const tapOverlay = document.getElementById("tapOverlay");
+      tapOverlay.addEventListener("click", () => {
+        audio
+          .play()
+          .then(() => {
+            setPlaying(true);
+            tapOverlay.classList.add("hide");
+            setTimeout(() => tapOverlay.remove(), 500);
+          })
+          .catch(() => {
+            tapOverlay.classList.add("hide");
+            setTimeout(() => tapOverlay.remove(), 500);
+          });
+      });
 
       function togglePlay() {
         if (audio.paused) {
