@@ -1057,16 +1057,16 @@
       }
 
       /* Tap đầu tiên bất kỳ đâu → bật nhạc */
-      function unlockAudio() {
+      function unlockAudio(e) {
+        document.removeEventListener("click", unlockAudio);
+        document.removeEventListener("touchstart", unlockAudio);
         audio
           .play()
           .then(() => setPlaying(true))
           .catch(() => {});
-        document.removeEventListener("click", unlockAudio);
-        document.removeEventListener("touchstart", unlockAudio);
       }
-      document.addEventListener("click", unlockAudio);
-      document.addEventListener("touchstart", unlockAudio);
+      document.addEventListener("click", unlockAudio, { passive: true });
+      document.addEventListener("touchstart", unlockAudio, { passive: true });
 
       function togglePlay() {
         if (audio.paused) {
