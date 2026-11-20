@@ -706,10 +706,10 @@ const PROFILE = {
   // HIỆU ỨNG
   // HIỆU ỨNG MỞ ĐẦU: một ảnh GIF hiện lên phủ màn hình khi vào trang rồi mờ dần biến mất
   introEffect: "gif",         // "gif" | "none" = tắt
-  // File hiệu ứng: trang thử lần lượt từ trên xuống, có cái nào thì dùng cái đó.
-  // Bỏ file intro.webm / intro.gif ... vào thư mục này thì nó được ưu tiên; không có thì dùng video sét Mixkit (miễn phí).
+  // File hiệu ứng: trang thử lần lượt từ trên xuống, có cái nào thì dùng cái đó. Video được tải sẵn ngay khi mở trang
+  // (trong lúc còn ở màn "click to enter") nên bấm vào là phát liền. Điện thoại tự dùng bản 360p cho nhẹ.
+  // Muốn dùng file riêng: bỏ file vào thư mục rồi thêm tên file lên đầu danh sách, ví dụ "intro.webm",
   introGif: [
-    "intro.webm", "intro.gif", "intro.webp", "intro.png",
     "https://assets.mixkit.co/videos/47947/47947-720.mp4",   // Mixkit: "Lightning Strike at night within clouds"
   ],
   introGifMode: "card",       // "card" = ôm quanh hồ sơ như Discord | "screen" = phủ cả màn hình
@@ -1740,14 +1740,33 @@ function pickIntro() {
   return pick;
 }
 
+// Tải sẵn hiệu ứng mở đầu ngay khi mở trang, để lúc bấm "click to enter" chỉ việc phát (không vừa tải vừa dựng trang).
+// Điện thoại dùng bản 360p (~440KB thay vì ~2,2MB của 720p) — trên màn nhỏ nhìn gần như không khác.
+const isVidUrl = u => /\.(webm|mp4|mov)(\?|$)/i.test(u);
+let introEl = null, introFailed = false;
+function prepareIntro() {
+  if (!P.introGif || P.introEffect !== "gif") return;
+  const box = $("intro-gif"), img = box.querySelector("img"), vid = box.querySelector("video");
+  const list = [].concat(P.introGif).map(u => LITE ? u.replace(/-720\.mp4(\?|$)/, "-360.mp4$1") : u);
+  (function tryNext(i) {
+    if (i >= list.length) { introFailed = true; introEl = null; return; }
+    const u = list[i];
+    if (isVidUrl(u)) {
+      vid.muted = true; vid.setAttribute("muted", ""); vid.playsInline = true; vid.setAttribute("playsinline", "");
+      vid.preload = "auto";
+      vid.onerror = () => { vid.onerror = null; tryNext(i + 1); };
+      vid.src = u; introEl = vid;
+    } else {
+      img.onerror = () => { img.onerror = null; tryNext(i + 1); };
+      img.src = u; introEl = img;
+    }
+  })(0);
+}
+
 function playGifIntro() {
-  if (!P.introGif || playIntro.running) return;
-  // Điện thoại: bỏ video sét mở đầu (phải tải video 720p rồi phát đè lên thẻ kèm bộ lọc + hoà màu, đúng lúc
-  // trang đang dựng mọi thứ → giật). Thay bằng một cú chớp sáng nhẹ trên canvas, gần như không tốn gì.
-  if (LITE) { flashA = .45; setTimeout(() => flashA = .25, 120); return; }
+  if (!P.introGif || playIntro.running || introFailed || !introEl) return;
   const box = $("intro-gif"), img = box.querySelector("img"), vid = box.querySelector("video");
   const ms = Math.max(1, P.introGifDuration || 4) * 1000;
-  const list = [].concat(P.introGif);
   playIntro.running = true;
 
   // Đặt vùng hiệu ứng: ôm quanh hồ sơ (card) hoặc cả màn hình
@@ -1770,8 +1789,9 @@ function playGifIntro() {
     // Hoà trộn đặt ở khung ngoài (nếu đặt ở ảnh bên trong, độ mờ của khung sẽ chặn hiệu ứng làm nền đen trong suốt)
     const blend = P.introGifBlend || "screen";
     box.style.mixBlendMode = blend;
-    // Ép phần tối gần đen về đen hẳn để biến mất hoàn toàn khi hoà trộn
-    el.style.filter = blend === "screen" ? "contrast(1.5) brightness(.85) saturate(1.2)" : "";
+    // Ép phần tối gần đen về đen hẳn để biến mất hoàn toàn khi hoà trộn (thiếu bước này cả thẻ bị phủ lớp xám).
+    // Điện thoại: video chỉ 360p nên bộ lọc nhẹ; bỏ phần tăng màu (saturate) cho bớt một bước xử lý
+    el.style.filter = blend !== "screen" ? "" : LITE ? "contrast(1.6) brightness(.8)" : "contrast(1.5) brightness(.85) saturate(1.2)";
     place();
     box.hidden = false; box.classList.remove("out");
     setTimeout(() => box.classList.add("show"), 30);
@@ -1779,28 +1799,25 @@ function playGifIntro() {
     setTimeout(() => { box.classList.add("out"); box.classList.remove("show"); }, ms - 800);
     setTimeout(() => {
       box.hidden = true;
-      img.removeAttribute("src"); img.style.display = "none";
-      vid.pause(); vid.removeAttribute("src"); vid.load(); vid.style.display = "none";
+      img.style.display = "none";
+      vid.pause(); vid.style.display = "none";              // giữ nguyên file đã tải để lần sau (introRepeat) phát lại ngay
       playIntro.running = false;
     }, ms);
   };
-  const fresh = u => u.startsWith("data:") ? u : u + (u.includes("?") ? "&" : "?") + "t=" + Date.now();
 
-  // Thử từng file trong danh sách, file nào mở được thì dùng
-  (function tryNext(i) {
-    if (i >= list.length) { playIntro.running = false; return; }   // không có file nào → bỏ qua
-    const u = list[i];
-    if (/\.(webm|mp4|mov)(\?|$)/i.test(u)) {
-      vid.onloadeddata = () => { vid.onloadeddata = null; vid.currentTime = 0; vid.play().catch(() => {}); show(vid); };
-      vid.onerror = () => tryNext(i + 1);
-      vid.src = u;
-    } else {
-      img.onload = () => { img.onload = null; show(img); };
-      img.onerror = () => tryNext(i + 1);
-      img.src = fresh(u);
-    }
-  })(0);
+  const el = introEl;
+  if (el === vid) {
+    // Chờ video thật sự chạy rồi mới hiện; quá 2,5 giây chưa chạy được (mạng chậm) thì bỏ qua cho khỏi hiện muộn
+    let ok = false;
+    const go = () => { if (ok) return; ok = true; clearTimeout(to); show(vid); };
+    const to = setTimeout(() => { if (ok) return; ok = true; vid.pause(); playIntro.running = false; }, 2500);
+    vid.addEventListener("playing", go, { once: true });
+    try { vid.currentTime = 0; } catch (e) {}
+    vid.play().catch(() => { if (!ok) { ok = true; clearTimeout(to); playIntro.running = false; } });
+  } else if (img.complete && img.naturalWidth) show(img);
+  else img.onload = () => { img.onload = null; show(img); };
 }
+prepareIntro();
 
 function playIntro(name) {
   if (!P.introEffect || P.introEffect === "none" || playIntro.running) return;
@@ -1836,7 +1853,7 @@ function fxDark(c, t, a = .55, inT = 300, holdT = 1500, outT = 1300) {     // ph
   const k = t < inT ? t / inT : t < holdT ? 1 : Math.max(0, 1 - (t - holdT) / outT);
   c.g.globalAlpha = k * a; c.g.fillStyle = "#000"; c.g.fillRect(0, 0, c.w, c.h); c.g.globalAlpha = 1;
 }
-function fxShake() { if (LITE) return; document.body.classList.add("shake"); setTimeout(() => document.body.classList.remove("shake"), 450); }
+function fxShake() { document.body.classList.add("shake"); setTimeout(() => document.body.classList.remove("shake"), 450); }
 function fxLine(g, pts, wd, col, a) {
   g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = wd; g.beginPath();
   pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke();
