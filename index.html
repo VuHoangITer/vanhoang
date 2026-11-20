@@ -1377,6 +1377,22 @@ function typer(texts, set, speed = 75) {
   })();
 }
 typer(P.bios, t => $("bio").textContent = t);
+// Giữ dòng giới thiệu luôn cao bằng câu dài nhất ở bề rộng hiện tại: chữ gõ dần xuống dòng rồi xoá đi sẽ không làm
+// thẻ cao / thấp liên tục (kéo theo thẻ co giãn và khung lửa vẽ lại)
+function sizeBio() {
+  const bio = $("bio"), probe = bio.cloneNode(false);
+  probe.removeAttribute("id");
+  Object.assign(probe.style, { position: "absolute", visibility: "hidden", left: "-9999px", top: "0",
+                               width: bio.clientWidth + "px", minHeight: "0", animation: "none" });
+  bio.parentNode.appendChild(probe);
+  let hmax = 0;
+  for (const t of P.bios) { probe.textContent = t; hmax = Math.max(hmax, probe.offsetHeight); }
+  probe.remove();
+  if (hmax) bio.style.minHeight = hmax + "px";
+}
+sizeBio();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(sizeBio);
+{ let bw = innerWidth; addEventListener("resize", () => { if (innerWidth !== bw) { bw = innerWidth; sizeBio(); } }); }
 if (P.animatedTitle) {
   const frames = (P.titleFrames && P.titleFrames.length ? P.titleFrames : [P.name]).map(t => Array.from(t));
   const L = P.titleLeft ?? "", R = P.titleRight ?? "";
@@ -2410,8 +2426,13 @@ addEventListener("resize", alignAvatar);
     chunksBox.innerHTML = "";
   }
   build();
-  let t = 0;
-  new ResizeObserver(() => { clearTimeout(t); t = setTimeout(build, 80); }).observe(prof);
+  // chỉ vẽ lại khi kích thước thẻ đổi thật (vẽ lại = hình lửa khác đi → nhìn như khung bị nháy)
+  let t = 0, bw = prof.offsetWidth, bh = prof.offsetHeight;
+  new ResizeObserver(() => {
+    const w = prof.offsetWidth, h = prof.offsetHeight;
+    if (Math.abs(w - bw) < 3 && Math.abs(h - bh) < 6) return;
+    bw = w; bh = h; clearTimeout(t); t = setTimeout(build, 80);
+  }).observe(prof);
 })();
 
 // ---------- Thẻ luôn vừa khít màn hình, không cuộn ----------
@@ -2419,11 +2440,17 @@ addEventListener("resize", alignAvatar);
 // Dùng thuộc tính scale / translate riêng nên không đụng tới transform nghiêng 3D theo chuột.
 (function fitProfile() {
   const prof = $("profile");
+  let vw = innerWidth, vh = innerHeight, lw = 0, lh = 0;
   const fit = () => {
-    const narrow = prof.offsetWidth < 500;
+    // Chỉ tính lại khi thật sự đổi cỡ: xoay máy / đổi bề rộng, hoặc chiều cao màn hình đổi nhiều.
+    // Thanh địa chỉ điện thoại ẩn / hiện (~60–110px) thì bỏ qua để thẻ không co giãn khi chạm, lướt.
+    if (innerWidth !== vw || Math.abs(innerHeight - vh) > 140) { vw = innerWidth; vh = innerHeight; }
+    const ow = prof.offsetWidth, oh = prof.offsetHeight;
+    if (Math.abs(ow - lw) < 3 && Math.abs(oh - lh) < 6 && prof.dataset.fitVh === String(vh)) return;
+    lw = ow; lh = oh; prof.dataset.fitVh = vh;
+    const narrow = ow < 500;
     const flameTop = (narrow ? 62 : 86) + 10, flameBot = (narrow ? 62 : 86) * .4 + 10;   // khớp với độ cao lửa của khung
-    const need = prof.offsetHeight + flameTop + flameBot;
-    const s = Math.min(1, innerHeight / need);
+    const s = Math.min(1, vh / (oh + flameTop + flameBot));
     prof.style.scale = s < 1 ? s.toFixed(3) : "";
     // lửa trên cao hơn lửa dưới → dịch thẻ xuống một chút để cả khối (lửa + thẻ) nằm giữa màn hình
     prof.style.translate = `0 ${((flameTop - flameBot) / 2 * s).toFixed(1)}px`;
