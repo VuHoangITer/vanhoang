@@ -160,6 +160,12 @@
     from { opacity: 0; filter: blur(10px); transform: translateY(18px) scale(.96); }
     to   { opacity: 1; filter: blur(0); transform: none; }
   }
+  /* Điện thoại: hiện ra không kèm làm mờ (blur động rất nặng với GPU điện thoại), nhanh hơn một chút */
+  @keyframes appearLite {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+  }
+  html.lite body.entered .profile > * { animation-name: appearLite; animation-duration: .7s; }
   /* Bố cục theo mẫu: [avatar | tên + giới thiệu]  /  [trạng thái · sóng nhạc · khung nhạc]  /  [icon] */
   .profile { width: min(820px, 100%); padding: 26px 34px 26px 18px; grid-template-columns: 290px 1fr; row-gap: 0; }
   .profile > .avatar-box { grid-row: 1 / span 3; margin: 50px auto 16px; }
@@ -536,6 +542,8 @@
   }
   .badges i { position: relative; filter: drop-shadow(0 0 4px var(--glow)); transition: transform .2s; }
   .badges i:hover { transform: scale(1.35) rotate(-8deg); }
+  .badges i.can-copy { cursor: pointer; padding: 6px; margin: -6px; -webkit-tap-highlight-color: transparent; }   /* vùng chạm rộng hơn icon */
+  .badges i.can-copy:active { transform: scale(.85); }
   .badges i:hover::after {
     content: attr(data-tip); position: absolute; bottom: 160%; left: 50%; translate: -50% 0;
     white-space: nowrap; font: 400 .7rem "Space Grotesk", sans-serif;
@@ -726,8 +734,8 @@ const PROFILE = {
   badges: [
     { icon: "fa-solid fa-code",           tip: "Developer" },
     { icon: "fa-solid fa-gamepad",        tip: "Gamer" },
-    { icon: "fa-solid fa-khanda",         tip: "League of Legends · Pain#16073" },
-    { icon: "fa-solid fa-shield-halved",  tip: "Albion Online · Narutobaco" },
+    { icon: "fa-solid fa-khanda",         tip: "League of Legends · Pain#16073", copy: "Pain#16073", label: "Riot ID" },   // có copy = bấm để copy
+    { icon: "fa-solid fa-shield-halved",  tip: "Albion Online · Narutobaco",     copy: "Narutobaco", label: "Albion Online" },
     { icon: "fa-solid fa-moon",           tip: "Night owl" },
   ],
   bios: [                     // các câu sẽ được gõ lần lượt
@@ -757,8 +765,7 @@ const PROFILE = {
   socials: [
     { icon: "fa-brands fa-facebook",     url: "https://www.facebook.com/hoang.van.vuz/" },
     { icon: "fa-brands fa-instagram",    url: "https://www.instagram.com/its.vhoang/" },
-    { icon: "fa-solid fa-khanda",        copy: "Pain#16073", label: "Riot ID" },
-    { icon: "fa-solid fa-shield-halved", copy: "Narutobaco", label: "Albion Online" },
+    // ID game (LoL, Albion) đã có ở huy hiệu cạnh tên nên không lặp lại ở đây
   ],
   // DANH SÁCH NHẠC: phát lần lượt từ trên xuống, hết bài tự chuyển.
   //   CÁCH NHANH NHẤT: tạo 1 playlist trên SoundCloud, dán link playlist vào đây MỘT LẦN
@@ -1135,6 +1142,21 @@ if (P.avatarFrameImage)
 P.badges.forEach(b => {
   const i = document.createElement("i");
   i.className = b.icon; i.dataset.tip = b.tip;
+  if (b.copy) {                                        // huy hiệu có copy: bấm / chạm để copy ID game
+    i.classList.add("can-copy"); i.tabIndex = 0; i.setAttribute("role", "button");
+    i.setAttribute("aria-label", "Copy " + b.tip);
+    const copy = () => {
+      const done = () => toast(`Đã copy ${b.label || b.tip}: ${b.copy}`);
+      (navigator.clipboard ? navigator.clipboard.writeText(b.copy) : Promise.reject())
+        .then(done)
+        .catch(() => {
+          const ta = Object.assign(document.createElement("textarea"), { value: b.copy });
+          document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); done();
+        });
+    };
+    i.onclick = copy;
+    i.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); copy(); } };
+  }
   $("badges").appendChild(i);
 });
 const nav = $("socials");
@@ -1720,6 +1742,9 @@ function pickIntro() {
 
 function playGifIntro() {
   if (!P.introGif || playIntro.running) return;
+  // Điện thoại: bỏ video sét mở đầu (phải tải video 720p rồi phát đè lên thẻ kèm bộ lọc + hoà màu, đúng lúc
+  // trang đang dựng mọi thứ → giật). Thay bằng một cú chớp sáng nhẹ trên canvas, gần như không tốn gì.
+  if (LITE) { flashA = .45; setTimeout(() => flashA = .25, 120); return; }
   const box = $("intro-gif"), img = box.querySelector("img"), vid = box.querySelector("video");
   const ms = Math.max(1, P.introGifDuration || 4) * 1000;
   const list = [].concat(P.introGif);
@@ -1811,7 +1836,7 @@ function fxDark(c, t, a = .55, inT = 300, holdT = 1500, outT = 1300) {     // ph
   const k = t < inT ? t / inT : t < holdT ? 1 : Math.max(0, 1 - (t - holdT) / outT);
   c.g.globalAlpha = k * a; c.g.fillStyle = "#000"; c.g.fillRect(0, 0, c.w, c.h); c.g.globalAlpha = 1;
 }
-function fxShake() { document.body.classList.add("shake"); setTimeout(() => document.body.classList.remove("shake"), 450); }
+function fxShake() { if (LITE) return; document.body.classList.add("shake"); setTimeout(() => document.body.classList.remove("shake"), 450); }
 function fxLine(g, pts, wd, col, a) {
   g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = wd; g.beginPath();
   pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke();
@@ -2449,9 +2474,12 @@ addEventListener("resize", alignAvatar);
     document.body.classList.toggle("wand", wand.on);
     if (wand.on) {
       prof.style.transform = "";
-      if (TOUCH) { wand.ax = W / 2 + 30; wand.ay = floor - 20; wand.lx = wand.px = W / 2 - 16; wand.ly = wand.py = floor - 80; }
+      wand.touch = TOUCH;
+      if (TOUCH) { wand.ax = W / 2 + 32; wand.ay = floor - 120; wand.lx = wand.px = W / 2 - 32; wand.ly = wand.py = floor - 30; }
       else { wand.lx = wand.px = W - 60; wand.ly = wand.py = 60; }
-      toast(TOUCH ? "Đã cầm gậy mèo — ngón tay giữ ở cán, kéo trong thẻ để nhử mèo" : "Đã cầm gậy mèo — di chuột trong thẻ để nhử mèo");
+      toast(TOUCH || navigator.maxTouchPoints > 0
+        ? "Đã cầm gậy mèo — giữ ngón tay phía trên đàn mèo, kéo để thòng mồi nhử"
+        : "Đã cầm gậy mèo — di chuột trong thẻ để nhử mèo");
     } else {
       cats.forEach(c => { if (c.state === "hunt" || c.state === "watch") choose(c); });
     }
@@ -2459,6 +2487,8 @@ addEventListener("resize", alignAvatar);
   const TOUCH = matchMedia("(hover: none)").matches;
   prof.addEventListener("pointerdown", e => {
     if (!wand.on || e.target.closest("a, button, .mplayer, .presence")) return;
+    // nhận cảm ứng theo chính lần chạm này (một số điện thoại báo sai là có chuột)
+    wand.touch = e.pointerType !== "mouse";
     [wand.ax, wand.ay] = local(e);
     if (e.pointerType !== "mouse") {
       e.preventDefault();
@@ -2469,13 +2499,18 @@ addEventListener("resize", alignAvatar);
   // chuột rời thẻ thì thả gậy; trên cảm ứng nhấc tay ra thì gậy vẫn đứng yên ở chỗ cũ
   prof.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") wand.ax = wand.ay = -999; });
 
-  // Điểm buộc dây. Chuột: ngay tại con trỏ (đầu gậy). Cảm ứng: ngón tay cầm ở CÁN, đầu gậy chĩa lên chéo sang trái
-  // (tránh phía ngón cái phải hay che), dây + mồi treo từ đầu gậy nên không bị ngón tay che mất.
-  const STICK_X = -46, STICK_Y = -104;
-  const wandTip = () => TOUCH ? [Math.max(8, wand.ax + STICK_X), wand.ay + STICK_Y] : [wand.ax, wand.ay];
+  // Điểm buộc dây. Chuột: ngay tại con trỏ (đầu gậy).
+  // Cảm ứng: ngón tay cầm CÁN ở phía trên, gậy chìa ngang sang bên như cần câu, dây dài thòng mồi XUỐNG chỗ mèo
+  // → ngón tay luôn ở cao hơn đàn mèo, không che mất mèo lẫn mồi. Sát mép trái thì gậy tự chìa sang phải.
+  const STICK = 64, STICK_UP = 22;
+  const wandTip = () => {
+    if (!wand.touch) return [wand.ax, wand.ay];
+    const side = wand.ax - STICK < 10 ? 1 : -1;
+    return [wand.ax + side * STICK, wand.ay - STICK_UP];
+  };
   function stepWand(k) {
     if (!wand.on) return;
-    const L = TOUCH ? 52 : 70, held = wand.ax > -500;
+    const L = wand.touch ? 112 : 70, held = wand.ax > -500;
     const vx = (wand.lx - wand.px) * .97, vy = (wand.ly - wand.py) * .97;
     wand.px = wand.lx; wand.py = wand.ly;
     wand.lx += vx; wand.ly += vy + .55 * k;
@@ -2492,13 +2527,13 @@ addEventListener("resize", alignAvatar);
     if (!wand.on) return;
     const { ax, ay, lx, ly } = wand;
     g.save(); g.lineCap = "round";
-    if (ax > -500 && TOUCH) {
+    if (ax > -500 && wand.touch) {
       // cán ở ngón tay (ax, ay) → đầu gậy (tx, ty); tay nắm bọc vải sẫm ở cán
       const [tx, ty] = wandTip();
       g.strokeStyle = "#8a5a3b"; g.lineWidth = 4.5; g.beginPath(); g.moveTo(ax, ay); g.lineTo(tx, ty); g.stroke();
       g.strokeStyle = "#e3c08d"; g.lineWidth = 1.6; g.beginPath(); g.moveTo(ax - 1, ay - 2); g.lineTo(tx + 1, ty + 1); g.stroke();
       const ux = (tx - ax) / Math.hypot(tx - ax, ty - ay), uy = (ty - ay) / Math.hypot(tx - ax, ty - ay);
-      g.strokeStyle = "#3a2a1c"; g.lineWidth = 7; g.beginPath(); g.moveTo(ax, ay); g.lineTo(ax + ux * 30, ay + uy * 30); g.stroke();
+      g.strokeStyle = "#3a2a1c"; g.lineWidth = 7; g.beginPath(); g.moveTo(ax - ux * 6, ay - uy * 6); g.lineTo(ax + ux * 18, ay + uy * 18); g.stroke();
       g.strokeStyle = "rgba(255,255,255,.75)"; g.lineWidth = 1;
       g.beginPath(); g.moveTo(tx, ty); g.quadraticCurveTo((tx + lx) / 2, Math.max(ty, ly) + 10, lx, ly); g.stroke();
     } else if (ax > -500) {
