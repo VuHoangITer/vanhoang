@@ -16,7 +16,9 @@
     --frame: #ffffff;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; }
+  /* Trang không bao giờ tự cuộn; chỉ vùng nội dung (main) cuộn dọc khi thẻ dài hơn màn hình.
+     Trình duyệt điện thoại bỏ qua overflow:hidden ở body nên phải khoá cả html */
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
   [hidden] { display: none !important; }
   /* Chặn bôi đen chữ, menu nhấn giữ trên iPhone, kéo ảnh/video */
   html.protect, html.protect body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -100,10 +102,12 @@
   @keyframes pulse { 0%,100% { opacity: .3; letter-spacing: .45em } 50% { opacity: 1; letter-spacing: .55em } }
 
   /* ---------- Nội dung ---------- */
+  /* Không cuộn gì hết: main đúng bằng màn hình, cắt mọi thứ thò ra ngoài. Thẻ cao hơn màn hình thì JS (fitProfile)
+     thu nhỏ thẻ cho vừa, tính cả phần lửa trên / dưới */
   main {
-    position: relative; z-index: 10; min-height: 100%;
-    display: grid; place-items: center; padding: 24px 16px;
-    perspective: 900px;
+    position: relative; z-index: 10; height: 100%;
+    display: grid; place-items: center; padding: 0 16px; perspective: 900px;
+    overflow: hidden; touch-action: manipulation;
   }
   .profile {
     position: relative; width: min(520px, 100%); text-align: center;
@@ -2312,8 +2316,10 @@ addEventListener("resize", alignAvatar);
     const W = w + PAD * 2, H = h + PAD + TOP + 44;
     const x0 = PAD, y0 = TOP, x1 = PAD + w, y1 = TOP + h, rad = 22;
     const tall = w < 500 ? 62 : 86;                      // độ cao lửa ở mép trên
-    base.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    Object.assign(wrap.style, { left: -PAD + "px", top: -TOP + "px", width: W + "px", height: H + "px" });
+    // Khung chứa đúng bằng thẻ; lửa ngoài thẻ chỉ là phần VẼ TRÀN (overflow visible) → không làm trang rộng / dài thêm,
+    // nên điện thoại không bị kéo ngang / dọc. viewBox chỉ lấy đúng vùng thẻ trong hệ toạ độ lửa.
+    base.setAttribute("viewBox", `${x0} ${y0} ${w} ${h}`);
+    Object.assign(wrap.style, { left: "0px", top: "0px", width: w + "px", height: h + "px" });
 
     // ---- Lấy mẫu quanh viền (theo chiều kim đồng hồ): vị trí, pháp tuyến hướng ra ngoài, tiếp tuyến ----
     const step = 3, S = [];
@@ -2406,6 +2412,25 @@ addEventListener("resize", alignAvatar);
   build();
   let t = 0;
   new ResizeObserver(() => { clearTimeout(t); t = setTimeout(build, 80); }).observe(prof);
+})();
+
+// ---------- Thẻ luôn vừa khít màn hình, không cuộn ----------
+// Đo chiều cao thật của thẻ (không bị ảnh hưởng bởi scale) + chỗ cho lửa trên / dưới; cao hơn màn hình thì thu nhỏ.
+// Dùng thuộc tính scale / translate riêng nên không đụng tới transform nghiêng 3D theo chuột.
+(function fitProfile() {
+  const prof = $("profile");
+  const fit = () => {
+    const narrow = prof.offsetWidth < 500;
+    const flameTop = (narrow ? 62 : 86) + 10, flameBot = (narrow ? 62 : 86) * .4 + 10;   // khớp với độ cao lửa của khung
+    const need = prof.offsetHeight + flameTop + flameBot;
+    const s = Math.min(1, innerHeight / need);
+    prof.style.scale = s < 1 ? s.toFixed(3) : "";
+    // lửa trên cao hơn lửa dưới → dịch thẻ xuống một chút để cả khối (lửa + thẻ) nằm giữa màn hình
+    prof.style.translate = `0 ${((flameTop - flameBot) / 2 * s).toFixed(1)}px`;
+  };
+  fit();
+  addEventListener("resize", fit);
+  new ResizeObserver(fit).observe(prof);
 })();
 
 // ---------- Chuột: con trỏ, vệt sáng, nghiêng ----------
