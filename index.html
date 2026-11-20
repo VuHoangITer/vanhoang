@@ -212,6 +212,60 @@
     background: rgba(255,255,255,.12); cursor: pointer;
   }
   .mplayer .mbar div { height: 100%; width: 0; background: #f2f5f8; box-shadow: none; }
+  .mico.on { color: var(--storm, #4fc8ff); }
+  .msub i.mfile { color: var(--storm, #4fc8ff); }
+
+  /* Danh sách nhạc: bảng nổi gắn vào body (ngoài thẻ 3D) để không bị cắt/nghiêng */
+  .mpanel {
+    position: fixed; z-index: 40; width: 320px; max-width: calc(100vw - 32px);
+    display: flex; flex-direction: column; max-height: min(420px, 70vh);
+    border-radius: 14px; background: rgba(22,28,36,.92); border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 24px 60px -18px rgba(0,0,0,.9), 0 0 30px -16px var(--storm, #4fc8ff);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    color: #e8edf2; font-size: .82rem; overflow: hidden;
+    animation: mpin .18s ease-out;
+  }
+  @keyframes mpin { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+  html.lite .mpanel { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(22,28,36,.98); }
+  .mp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 10px 8px 14px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .mp-title { font-weight: 600; color: #f2f5f8; white-space: nowrap; }
+  .mp-title i { color: var(--storm, #4fc8ff); margin-right: 4px; }
+  .mp-ctrl { display: flex; gap: 2px; }
+  .mp-b {
+    position: relative; width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent;
+    color: #aab4bf; font-size: .85rem; cursor: pointer; transition: background .15s, color .15s;
+  }
+  .mp-b:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .mp-b.on { color: var(--storm, #4fc8ff); }
+  .mp-b .one { position: absolute; right: 3px; bottom: 3px; font: 700 .55rem/1 "Space Grotesk", sans-serif; }
+  .mp-list { list-style: none; overflow-y: auto; padding: 4px; overscroll-behavior: contain; }
+  .mp-row {
+    display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 4px; border-radius: 9px;
+    cursor: pointer; transition: background .12s;
+  }
+  .mp-row:hover { background: rgba(255,255,255,.06); }
+  .mp-row.cur { background: rgba(79,200,255,.12); }
+  .mp-row.cur .mp-name { color: var(--storm, #4fc8ff); }
+  .mp-list { position: relative; overflow-anchor: none; }   /* tắt neo cuộn để danh sách không tự nhảy khi đổi chỗ */
+  .mp-list.sorting { -webkit-user-select: none; user-select: none; }
+  .mp-list.sorting .mp-row:not(.drag):hover { background: transparent; }
+  .mp-row { position: relative; will-change: transform; }
+  .mp-row.drag {
+    z-index: 2; background: rgba(48,58,72,.97);
+    box-shadow: 0 10px 26px -8px rgba(0,0,0,.85), 0 0 0 1px rgba(79,200,255,.35);
+    transition: box-shadow .15s, background .15s;
+  }
+  .mp-grip { flex: none; width: 22px; height: 28px; display: grid; place-items: center; color: #6c7783; cursor: grab; touch-action: none; }
+  .mp-row.drag .mp-grip { cursor: grabbing; }
+  .mp-num { flex: none; width: 18px; text-align: center; color: #8793a0; font-variant-numeric: tabular-nums; }
+  .mp-row.cur .mp-num { color: var(--storm, #4fc8ff); }
+  .mp-txt { flex: 1; min-width: 0; line-height: 1.25; }
+  .mp-name { color: #f2f5f8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mp-art { font-size: .7rem; color: #8f9aa6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mp-src { flex: none; color: #6c7783; font-size: .8rem; }
+  .mp-src .fa-soundcloud { color: #ff7a1a; }
+  .mp-foot { padding: 7px 14px 9px; font-size: .68rem; color: #77828e; border-top: 1px solid rgba(255,255,255,.08); }
+  @media (hover: none) { .mp-b { width: 38px; height: 38px; } .mp-row { padding-top: 9px; padding-bottom: 9px; } .mp-grip { width: 30px; height: 34px; } }
 
   /* Hàng trên (máy tính): avatar nhỏ lại, [tên + huy hiệu] cùng một dòng, chữ chạy ngay dưới — cả cụm căn giữa theo avatar */
   @media (min-width: 761px) {
@@ -260,6 +314,22 @@
     background: var(--dstat, #23a55a) !important; box-shadow: none !important;
   }
   .row2 .presence.discord .title { font-size: .92rem; font-weight: 700; }
+  /* Nameplate: video nền phủ cả thẻ, mờ dần về phía avatar bên trái để chữ vẫn dễ đọc */
+  .row2 .presence.discord { position: relative; overflow: hidden; }
+  .row2 .presence.discord > :not(.dplate) { position: relative; z-index: 1; }
+  .dplate {
+    position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+    object-fit: cover; object-position: right center;
+    -webkit-mask-image: linear-gradient(to right, transparent 8%, rgba(0,0,0,.55) 40%, #000 75%);
+            mask-image: linear-gradient(to right, transparent 8%, rgba(0,0,0,.55) 40%, #000 75%);
+  }
+  .row2 .presence.discord.has-plate .title, .row2 .presence.discord.has-plate .sub { text-shadow: 0 1px 3px rgba(0,0,0,.9); }
+  .dtag {
+    display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; padding: 0 5px; height: 17px;
+    border-radius: 5px; background: rgba(255,255,255,.12); font-size: .66rem; font-weight: 700;
+    color: #f2f5f8; vertical-align: 1px; text-shadow: none;
+  }
+  .dtag img { width: 12px; height: 12px; }
   .row2 .presence.discord .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .wand-btn {
     position: absolute; top: 12px; right: 12px; z-index: 5; width: 34px; height: 34px;
@@ -414,6 +484,10 @@
     50%     { filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 16px var(--storm)); }
   }
   .storm-svg .bolts { filter: drop-shadow(0 0 4px var(--storm)) drop-shadow(0 0 10px var(--storm)); }
+  .aura-cv {
+    position: absolute; left: -148px; top: -98px; width: 400px; height: 260px;
+    pointer-events: none; z-index: 1; mix-blend-mode: screen;
+  }
   .storm-svg .tail { transform-origin: 252px 116px; animation: tailwave 1.6s ease-in-out infinite; }
   .storm-svg .tail2 { animation-delay: -.5s; animation-duration: 1.9s; }
   @keyframes tailwave {
@@ -671,11 +745,21 @@ const PROFILE = {
     { icon: "fa-solid fa-khanda",        copy: "Pain#16073", label: "Riot ID" },
     { icon: "fa-solid fa-shield-halved", copy: "Narutobaco", label: "Albion Online" },
   ],
-  // NHẠC NỀN: link bài trên SoundCloud (phát qua trình phát chính thức của SoundCloud, ẩn đi)
-  soundcloud: "https://soundcloud.com/l-c-tr-n-711778695/n-1ng-quinvy-remix-nh-c-hot",
-  music: "",                  // hoặc file mp3 trong thư mục (ví dụ "music.mp3") — dùng khi không có soundcloud
-  musicShowTitle: false,      // true = hiện tên bài + ca sĩ trên thẻ nhạc; false = hiện "now playing"
-  musicLabel: "Ẩn Ý",         // chữ hiện trên thẻ nhạc
+  // DANH SÁCH NHẠC: phát lần lượt từ trên xuống, hết bài tự chuyển.
+  //   CÁCH NHANH NHẤT: tạo 1 playlist trên SoundCloud, dán link playlist vào đây MỘT LẦN
+  //     { src: "https://soundcloud.com/ten-ban/sets/ten-playlist" },
+  //   → sau này thêm/bớt/sắp xếp bài ngay trong app SoundCloud, trang tự cập nhật, không cần sửa code nữa.
+  //   Hoặc thêm từng bài: copy link bài trên SoundCloud, thêm 1 dòng { src: "link bài" },
+  //   title / artist = tên bài + ca sĩ (để trống sẽ tự lấy từ SoundCloud; không dùng cho link playlist)
+  //   (vẫn dùng được file mp3 trong thư mục nếu cần, ví dụ { src: "nhac/bai.mp3", title: "..." })
+  // Người xem có thể kéo thả sắp xếp lại trong danh sách — thứ tự đó chỉ lưu trên trình duyệt của họ.
+  playlist: [
+    { src: "https://soundcloud.com/hoang-ne-202288490/sets/hoang-hay-nghe" },
+  ],
+  musicRepeat: "all",         // "all" = hết danh sách quay lại bài đầu | "one" = lặp mãi 1 bài
+  musicShuffle: false,        // true = phát ngẫu nhiên
+  musicShowTitle: true,       // true = thẻ nhạc hiện tên bài đang phát; false = luôn hiện musicLabel
+  musicLabel: "Ẩn Ý",         // chữ hiện trên thẻ nhạc khi musicShowTitle = false
   musicTitle: "",             // tên bài hiện ở góc phải dưới (SoundCloud sẽ tự lấy tên bài)
   // Video nền chuyển động (miễn phí, Pexels), tự chuyển đen trắng. Để "" sẽ dùng ảnh nền bên dưới.
   // Video khác có thể thay vào:
@@ -742,7 +826,7 @@ const AVATAR_EMBED = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD//gAEKgD
         <div class="msub" id="msub"><i class="fa-brands fa-soundcloud"></i> SoundCloud</div>
       </div>
       <span class="mtime" id="mtime">0:00</span>
-      <button class="mico" id="mlike" aria-label="Thích"><i class="fa-regular fa-heart"></i></button>
+      <button class="mico" id="mlist" aria-label="Danh sách nhạc" aria-expanded="false"><i class="fa-solid fa-list-ul"></i></button>
       <button class="mbtn" id="mbtn" aria-label="Phát / dừng nhạc"><i class="fa-solid fa-play"></i></button>
       <div class="mbar" id="mbar"><div id="mfill"></div></div>
     </div></div>
@@ -750,7 +834,20 @@ const AVATAR_EMBED = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD//gAEKgD
   </div>
 </main>
 
-<audio id="audio" loop></audio>
+<audio id="audio" preload="none"></audio>
+<div class="mpanel" id="mpanel" hidden role="dialog" aria-label="Danh sách nhạc">
+  <div class="mp-head">
+    <span class="mp-title"><i class="fa-solid fa-list-ul"></i> Danh sách nhạc</span>
+    <span class="mp-ctrl">
+      <button class="mp-b" id="mprev" aria-label="Bài trước" title="Bài trước"><i class="fa-solid fa-backward-step"></i></button>
+      <button class="mp-b" id="mnext" aria-label="Bài sau" title="Bài sau"><i class="fa-solid fa-forward-step"></i></button>
+      <button class="mp-b" id="mshuf" aria-label="Phát ngẫu nhiên" title="Phát ngẫu nhiên"><i class="fa-solid fa-shuffle"></i></button>
+      <button class="mp-b" id="mrep" aria-label="Chế độ lặp"><i class="fa-solid fa-repeat"></i></button>
+    </span>
+  </div>
+  <ol class="mp-list" id="mplist"></ol>
+  <div class="mp-foot">Kéo <i class="fa-solid fa-grip-vertical"></i> để sắp xếp · bấm vào bài để phát</div>
+</div>
 
 <script>
 const P = PROFILE, $ = id => document.getElementById(id);
@@ -851,24 +948,26 @@ if (P.avatarFrame === "storm") {
       <linearGradient id="clothFill" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#1c2633"/><stop offset="1" stop-color="#0a0f16"/>
       </linearGradient>
-      <clipPath id="faceClip"><circle cx="200" cy="150" r="50"/></clipPath>
-    </defs>`;
+      <clipPath id="faceClip"><circle cx="200" cy="150" r="50"/></clipPath>    </defs>`;
   // "hold" = hai tay cầm hai thanh kiếm dựng chéo ra hai bên | "cross" = hai thanh bắt chéo sau avatar
   const HOLD = P.katanaPose !== "cross";
   const KPOSE = HOLD ? "translate(122,214) rotate(-110) scale(.74) translate(-34,0)" : "translate(70,222) rotate(-36)";
-  // Nắm tay: nắm quanh chuôi kiếm, có ống tay áo tối màu phía dưới
+  // Bàn tay nắm chuôi kiếm, vẽ theo trục thanh kiếm (x dọc chuôi, chắn kiếm ở phía x lớn; y ngang chuôi,
+  // +y = phía trong hướng vào avatar). Lòng bàn tay quay vào trong: đốt ngón tay (khớp) ở mép ngoài,
+  // 4 ngón quấn qua chuôi về phía trong; ngón cái vòng từ phía trong qua đè lên ngón trỏ, móng ở đầu ngón phía ngoài.
+  const SK = "#f2c79a", SKD = "#6b4226", SKL = "#f8dcbb";
+  const fingers = [18, 25.6, 33.2, 40.8].map(x => `
+      <rect x="${x}" y="-10" width="7.6" height="20" rx="3.8" fill="${SK}" stroke="${SKD}" stroke-width="1.1"/>
+      <path d="M${x + 1.5},-4.5 q2.3,1.4 4.6,0" fill="none" stroke="${SKD}" stroke-width=".8" stroke-linecap="round" opacity=".55"/>`).join("");
   const fist = `
-    <path d="M114,232 Q112,222 118,216 L132,222 Q134,234 126,240 Z" fill="#141c25" stroke="${c}" stroke-width="1" stroke-opacity=".7"/>
-    <g transform="rotate(-20 122 214)">
-      <rect x="111" y="204" width="23" height="19" rx="7" fill="#f2c79a" stroke="#6b4226" stroke-width="1.3"/>
-      <path d="M117,205 v7 M122,204.5 v7.5 M127,205 v7" stroke="#6b4226" stroke-width="1.1" stroke-linecap="round" opacity=".75"/>
-      <path d="M111,214 q7,-3 13,2" fill="none" stroke="#6b4226" stroke-width="1.2" stroke-linecap="round"/>
-      <rect x="110" y="211" width="9" height="8" rx="4" fill="#f6d2aa" stroke="#6b4226" stroke-width="1"/>
-    </g>`;
-  const hands = HOLD ? `${fist}<g transform="matrix(-1 0 0 1 400 0)">${fist}</g>` : "";
+    <path d="M17,5 Q15,14 23,14.5 L47,14.5 Q53,14 53,6 Z" fill="#e3b083" stroke="${SKD}" stroke-width="1.1" stroke-linejoin="round"/>
+    ${fingers}
+    <path d="M46,16 Q45,4 47,-4 Q48.5,-8.5 52.5,-8.5 Q56.5,-8.5 57,-4 Q58,6 56,16 Z" fill="${SK}" stroke="${SKD}" stroke-width="1.1" stroke-linejoin="round"/>
+    <rect x="48.6" y="-7.2" width="6.4" height="5.6" rx="2.4" fill="${SKL}" stroke="${SKD}" stroke-width=".7" opacity=".95"/>`;
+  const handAt = `<g transform="${KPOSE}">${fist}</g>`;
+  const hands = HOLD ? `${handAt}<g transform="matrix(-1 0 0 1 400 0)">${handAt}</g>` : "";
   box.insertAdjacentHTML("afterbegin", `
-  <svg class="storm-svg storm-back" viewBox="0 0 400 260" aria-hidden="true">${defs}
-    <g transform="${KPOSE}">${katana("kb-l")}</g>
+  <svg class="storm-svg storm-back" viewBox="0 0 400 260" aria-hidden="true">${defs}    <g transform="${KPOSE}">${katana("kb-l")}</g>
     <g transform="matrix(-1 0 0 1 400 0)"><g transform="${KPOSE}">${katana("kb-r")}</g></g>
     <g class="bolts" id="bolts-back"></g>
   </svg>`);
@@ -891,55 +990,119 @@ if (P.avatarFrame === "storm") {
     <g class="bolts" id="bolts-front"></g>
   </svg>`);
 
-  // Tia sét: tạo đường gấp khúc ngẫu nhiên, vẽ lại liên tục
-  const jag = (pts) => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join("");
-  function arc(r0, a0, span) {
-    const pts = [], n = 10;
-    for (let i = 0; i <= n; i++) {
-      const a = a0 + span * i / n, r = r0 + rand(-7, 7);
-      pts.push([200 + Math.cos(a) * r, 150 + Math.sin(a) * r]);
+  // ---- Aura kiểu Super Saiyan: hạt năng lượng bốc lên từ viền avatar, cộng sáng ("lighter") và để lại vệt
+  //      kéo dài thành các lưỡi lửa. Vẽ trên canvas nằm sau ảnh nên hạt bay ngang qua ảnh sẽ bị ảnh che. ----
+  const CX = 200, CY = 150;                                // tâm avatar trong hệ toạ độ 400×260 của khung
+  const P2 = (a, r) => [CX + Math.cos(a) * r, CY + Math.sin(a) * r];
+  const f1 = n => n.toFixed(1);
+  const cv = document.createElement("canvas");
+  cv.className = "aura-cv";
+  box.insertAdjacentElement("afterbegin", cv);
+  const DPR = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = 400 * DPR; cv.height = 260 * DPR;
+  const actx = cv.getContext("2d");
+  actx.scale(DPR, DPR);
+  const hx = c.replace("#", "");
+  const rgb = (hx.length === 3 ? hx.split("").map(h => h + h) : hx.match(/../g)).map(h => parseInt(h, 16)).join(",");
+  const spr = document.createElement("canvas");            // một hạt: lõi trắng → màu sấm → trong suốt
+  spr.width = spr.height = 64;
+  const sg = spr.getContext("2d"), grd = sg.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, "rgba(255,255,255,1)");
+  grd.addColorStop(.22, `rgba(${rgb},.95)`);
+  grd.addColorStop(.6, `rgba(${rgb},.32)`);
+  grd.addColorStop(1, `rgba(${rgb},0)`);
+  sg.fillStyle = grd; sg.fillRect(0, 0, 64, 64);
+  const parts = [];
+  let auraLast = 0;
+  (function auraLoop(now) {
+    requestAnimationFrame(auraLoop);
+    const dt = now - auraLast;
+    if (dt < (LITE ? 33 : 15)) return;
+    auraLast = now;
+    const fs = Math.min(3, dt / 16.7), t = now / 1000;    // fs: bù tốc độ khi máy chạy ít khung hình
+    actx.globalCompositeOperation = "destination-out";     // xoá mờ dần khung cũ → để lại vệt lửa
+    actx.fillStyle = "rgba(0,0,0,.34)"; actx.fillRect(0, 0, 400, 260);
+    actx.globalCompositeOperation = "lighter";
+    const burst = .75 + .25 * Math.sin(t * 7) + (Math.random() < .04 ? 1.2 : 0);   // nhịp bùng lên
+    for (let n = (LITE ? 4 : 8) * fs * burst; n > 0; n--) {
+      const a = rand(0, Math.PI * 2), r = rand(47, 56), up = (1 - Math.sin(a)) / 2;
+      const [x, y] = P2(a, r);
+      parts.push({ x, y, vx: Math.cos(a) * rand(.12, .5), vy: -rand(.7, 1.5) - up * .7 + Math.sin(a) * .2,
+                   life: 1, dec: rand(.017, .03), s: rand(6, 13), ph: rand(0, 6.28) });
     }
-    return jag(pts);
-  }
-  function bolt(x1, y1, x2, y2) {
-    const pts = [[x1, y1]], n = 7;
-    for (let i = 1; i < n; i++) {
-      const t = i / n;
-      pts.push([x1 + (x2 - x1) * t + rand(-9, 9), y1 + (y2 - y1) * t + rand(-9, 9)]);
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.x += (p.vx + Math.sin(t * 9 + p.ph) * .28) * fs; p.y += p.vy * fs;
+      p.vx *= .985; p.life -= p.dec * fs;
+      if (p.life <= 0) { parts[i] = parts[parts.length - 1]; parts.pop(); continue; }
+      const s = p.s * (.35 + .65 * p.life);
+      actx.globalAlpha = Math.min(1, p.life * 1.5) * .5;
+      actx.drawImage(spr, p.x - s, p.y - s * 1.35, s * 2, s * 2.7);   // hạt kéo dài theo chiều dọc
     }
-    pts.push([x2, y2]);
-    return jag(pts);
+    actx.globalAlpha = 1;
+  })(0);
+
+  // ---- Tia sét gãy khúc sắc nhọn: chia đôi đoạn thẳng nhiều lần, mỗi lần lệch ngẫu nhiên; có nhánh rẽ; chớp tắt ----
+  const jag = (pts) => pts.map((p, i) => (i ? "L" : "M") + f1(p[0]) + "," + f1(p[1])).join("");
+  function zap(x1, y1, x2, y2, disp, depth) {
+    let pts = [[x1, y1], [x2, y2]];
+    for (let d = 0; d < depth; d++) {
+      const out = [pts[0]];
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+        const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1, o = rand(-disp, disp);
+        out.push([(ax + bx) / 2 - dy / L * o, (ay + by) / 2 + dx / L * o], pts[i]);
+      }
+      pts = out; disp *= .55;
+    }
+    return pts;
   }
-  const line = (d, w, o) => `<path d="${d}" fill="none" stroke="${o ? "#ffffff" : c}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round" opacity="${o ? .95 : .55}"/>`;
+  const line = (d, w, core) => `<path d="${d}" fill="none" stroke="${core ? "#ffffff" : c}" stroke-width="${f1(w)}" stroke-linejoin="miter" stroke-linecap="round" opacity="${core ? 1 : .6}"/>`;
+  function strike(pts, w, branches = true) {
+    const d = jag(pts);
+    let s = line(d, w * 2.8, false) + line(d, w, true);
+    const nb = !branches ? 0 : Math.random() < .35 ? 0 : Math.random() < .6 ? 1 : 2;
+    for (let b = 0; b < nb; b++) {
+      const i = Math.floor(rand(.2, .75) * pts.length), j = Math.min(pts.length - 1, i + 2);
+      const [sx, sy] = pts[i], ang = Math.atan2(pts[j][1] - sy, pts[j][0] - sx) + (Math.random() < .5 ? -1 : 1) * rand(.45, 1);
+      const L = rand(10, 24), bd = jag(zap(sx, sy, sx + Math.cos(ang) * L, sy + Math.sin(ang) * L, L * .4, 3));
+      s += line(bd, w * 1.9, false) + line(bd, w * .65, true);
+    }
+    return s;
+  }
   setInterval(() => {
     let back = "", front = "";
-    for (let k = 0; k < 3; k++) {
-      const d = arc(rand(58, 70), rand(0, Math.PI * 2), rand(.7, 1.6));
-      const s = line(d, 4, false) + line(d, 1.3, true);
-      // Có mặt nạ thì cho sét chạy cả trước lẫn sau ảnh; không thì chỉ ở phía sau, không đè lên mặt
-      (P.ninjaMask !== false && Math.random() < .5) ? front += s : back += s;
+    if (Math.random() < .85) {                             // thỉnh thoảng tắt hẳn một nhịp cho cảm giác chớp giật
+      const n = 1 + Math.floor(Math.random() * 3);
+      for (let k = 0; k < n; k++) {
+        // Phía trước ảnh: chỉ những tia ngắn ở vòng ngoài, không đè lên mặt
+        const toFront = P.ninjaMask !== false || Math.random() < .4;
+        const span = toFront ? rand(.35, .55) : rand(.45, .95), a = rand(0, Math.PI * 2);
+        const r1 = toFront ? rand(68, 80) : rand(58, 80), r2 = toFront ? rand(68, 80) : rand(58, 80);
+        const [x1, y1] = P2(a, r1), [x2, y2] = P2(a + span, r2);
+        const s = strike(zap(x1, y1, x2, y2, toFront ? 9 : 16, 5), rand(.9, 1.4));
+        toFront ? front += s : back += s;
+      }
+      if (Math.random() < .55) {                           // tia ngắn phóng ra ngoài từ viền aura
+        const a = rand(0, Math.PI * 2), [x1, y1] = P2(a, 60), [x2, y2] = P2(a + rand(-.3, .3), rand(84, 108));
+        back += strike(zap(x1, y1, x2, y2, 9, 4), .9);
+      }
+      if (Math.random() < .2) {                            // tia phóng thẳng lên trời
+        const x = rand(170, 230);
+        back += strike(zap(x, 92, x + rand(-30, 30), rand(6, 30), 14, 5), 1.1);
+      }
     }
-    // Sét quấn dọc lưỡi kiếm (toạ độ theo trục của thanh kiếm)
+    // Sét chạy dọc lưỡi kiếm (toạ độ theo trục của thanh kiếm)
     for (const id of ["kb-l", "kb-r"]) {
       let k = "";
-      const n = Math.random() < .6 ? 2 : 1;
-      for (let j = 0; j < n; j++) {
-        const pts = [], x0 = rand(78, 120), x1 = rand(240, 306);
-        for (let x = x0; x <= x1; x += rand(10, 18)) {
-          const yc = -12 * ((x - 76) / 220) ** 2;
-          pts.push([x, yc + rand(-9, 9)]);
-        }
-        const d = jag(pts);
-        k += line(d, 3.4, false) + line(d, 1.1, true);
+      if (Math.random() < .8) {
+        const yc = x => -12 * ((x - 76) / 220) ** 2, x0 = rand(78, 130), x1 = rand(230, 306);
+        k = strike(zap(x0, yc(x0) + rand(-4, 4), x1, yc(x1) + rand(-4, 4), 11, 5), 1.2);
       }
       $(id).innerHTML = k;
     }
-    if (Math.random() < .25) {                       // tia phóng thẳng lên trời
-      const x = rand(160, 240), d = bolt(x, 96, x + rand(-30, 30), rand(10, 40));
-      back += line(d, 3, false) + line(d, 1, true);
-    }
     $("bolts-back").innerHTML = back; $("bolts-front").innerHTML = front;
-  }, LITE ? 200 : 90);
+  }, LITE ? 160 : 80);
   if (P.embers && !LITE) setInterval(() => {
     if (!document.body.classList.contains("entered")) return;
     const e = document.createElement("span");
@@ -1019,15 +1182,39 @@ if (P.presence) {
 // ---------- Thẻ Discord (giống trong app) — dữ liệu thật qua Lanyard nếu có id ----------
 const DSTAT = { online: ["#23a55a", "Online"], idle: ["#f0b232", "Idle"], dnd: ["#f23f43", "Do Not Disturb"], offline: ["#80848e", "Offline"] };
 function setDiscord(d) {
-  const st = DSTAT[d.status] || DSTAT.online;
-  $("presence").classList.add("discord");
-  $("presence").style.setProperty("--dstat", st[0]);
-  $("pres-pic").innerHTML =
-    `<img class="dav" src="${d.av}" alt="" onerror="if(this.src!==DISCORD_EMBED)this.src=DISCORD_EMBED">` +
-    (d.deco ? `<img class="ddeco" src="${d.deco}" alt="">` : "");
-  $("pres-title").textContent = d.name;
+  const st = DSTAT[d.status] || DSTAT.online, pr = $("presence");
+  pr.classList.add("discord");
+  pr.style.setProperty("--dstat", st[0]);
+  // chỉ vẽ lại avatar khi đổi ảnh, để ảnh động / khung động không bị chạy lại từ đầu mỗi lần cập nhật
+  const picKey = d.av + "|" + (d.deco || "");
+  if ($("pres-pic").dataset.k !== picKey) {
+    $("pres-pic").dataset.k = picKey;
+    $("pres-pic").innerHTML =
+      `<img class="dav" src="${d.av}" alt="" onerror="if(this.src!==DISCORD_EMBED)this.src=DISCORD_EMBED">` +
+      (d.deco ? `<img class="ddeco" src="${d.deco}" alt="">` : "");
+  }
+  // Nameplate (hiệu ứng nền phía sau tên, mua trong Discord Shop): video động, ảnh tĩnh làm ảnh chờ
+  let pl = pr.querySelector(".dplate");
+  if (d.plate) {
+    if (!pl) {
+      pl = document.createElement("video");
+      pl.className = "dplate"; pl.muted = true; pl.loop = true; pl.autoplay = true; pl.playsInline = true;
+      pl.setAttribute("muted", ""); pl.setAttribute("playsinline", ""); pl.setAttribute("aria-hidden", "true");
+      pr.prepend(pl);
+    }
+    if (pl.dataset.src !== d.plate.video) {
+      pl.dataset.src = d.plate.video;
+      pl.poster = d.plate.poster;                         // video lỗi / chưa tải xong thì hiện ảnh tĩnh
+      pl.src = d.plate.video; pl.play().catch(() => {});
+    }
+    pr.classList.add("has-plate");
+  } else if (pl) { pl.remove(); pr.classList.remove("has-plate"); }
+  // Tên + tag server (ví dụ [AO]) giống trong app
+  $("pres-title").innerHTML = escHtml(d.name) + (d.tag
+    ? ` <span class="dtag">${d.tagBadge ? `<img src="${d.tagBadge}" alt="">` : ""}${escHtml(d.tag)}</span>` : "");
   $("pres-sub").textContent = d.username + " · " + (d.activity || st[1]);
 }
+function escHtml(s) { return String(s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 if (P.discord && $("presence")) {
   const D = P.discord;
   setDiscord({ name: D.name, username: D.username, av: D.avatar || DISCORD_EMBED, status: D.status });
@@ -1038,6 +1225,8 @@ if (P.discord && $("presence")) {
         if (!j.success) return;
         const d = j.data, u = d.discord_user, acts = d.activities || [];
         const ext = u.avatar && u.avatar.startsWith("a_") ? "gif" : "png";
+        const np = u.collectibles && u.collectibles.nameplate, g = u.primary_guild;
+        const NPB = "https://cdn.discordapp.com/assets/collectibles/";
         const act = acts.find(a => a.type !== 4), custom = acts.find(a => a.type === 4);
         let activity = "";
         if (act) activity = (act.type === 2 ? "Listening to " : act.type === 3 ? "Watching " : "Playing ") + act.name;
@@ -1047,6 +1236,10 @@ if (P.discord && $("presence")) {
           av: u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.${ext}?size=128` : (D.avatar || DISCORD_EMBED),
           deco: u.avatar_decoration_data && u.avatar_decoration_data.asset
             ? `https://cdn.discordapp.com/avatar-decoration-presets/${u.avatar_decoration_data.asset}.png?size=160&passthrough=true` : "",
+          plate: np && np.asset ? { video: NPB + np.asset + "asset.webm", poster: NPB + np.asset + "static.png" } : null,
+          tag: g && g.identity_enabled && g.tag ? g.tag : "",
+          tagBadge: g && g.badge && g.identity_guild_id
+            ? `https://cdn.discordapp.com/guild-tag-badges/${g.identity_guild_id}/${g.badge}.png?size=32` : "",
         });
       } catch (e) {}
     };
@@ -1113,74 +1306,369 @@ if (!LITE && ["glitch", "both"].includes(P.nameEffect)) {
   })();
 }
 
-// ---------- Nhạc ----------
+// ---------- Nhạc: danh sách phát (file mp3 trong thư mục + bài SoundCloud) ----------
 const audio = $("audio");
-if (P.music) {
-  audio.src = P.music; $("vol").hidden = false;
-  if (P.musicTitle) { $("song").hidden = false; $("song").innerHTML = `<i class="fa-solid fa-music"></i> ${P.musicTitle}`; }
-}
-audio.onplay = audio.onpause = () =>
-  $("vol").innerHTML = `<i class="fa-solid fa-volume-${audio.paused ? "xmark" : "high"}"></i>`;
-$("vol").onclick = () => audio.paused ? audio.play().catch(() => {}) : audio.pause();
+const isSC = s => /soundcloud\.com\//i.test(s);
+const escH = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmtT = s => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+// Lưu thứ tự / chế độ lặp trên trình duyệt người xem (lỗi bộ nhớ thì bỏ qua)
+const mstore = {
+  get(k, d) { try { const v = localStorage.getItem("mp_" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem("mp_" + k, JSON.stringify(v)); } catch (e) {} },
+};
 
-// SoundCloud: dùng trình phát nhúng chính thức (ẩn), điều khiển bằng nút loa
-let sc = null, scPlaying = false;
-if (P.soundcloud) {
-  const f = document.createElement("iframe");
-  f.id = "sc"; f.allow = "autoplay";
-  f.src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(P.soundcloud) +
-          "&auto_play=false&visual=false&show_comments=false&hide_related=true";
-  f.style.cssText = "position:fixed;left:-9999px;top:0;width:300px;height:166px;border:0";
-  document.body.appendChild(f);
-  // Khung nhạc thay cho ô trạng thái; không hiện tên bài
-  $("mplayer").hidden = false;
-  $("mtitle").textContent = P.musicLabel || "now playing";
-  const setVol = () => {
-    $("mplayer").classList.toggle("playing", scPlaying);
-    $("wave").classList.toggle("playing", scPlaying);
-    $("mbtn").innerHTML = `<i class="fa-solid fa-${scPlaying ? "pause" : "play"}"></i>`;
-  };
-  setVol();
-  $("mbtn").onclick = () => sc && sc.toggle();
-  $("mlike").onclick = () => {
-    const on = $("mlike").classList.toggle("on");
-    $("mlike").innerHTML = `<i class="fa-${on ? "solid" : "regular"} fa-heart"></i>`;
-  };
-  const s = document.createElement("script");
-  s.src = "https://w.soundcloud.com/player/api.js";
-  s.onload = () => {
-    sc = SC.Widget(f);
-    sc.bind(SC.Widget.Events.READY, () => {
-      sc.setVolume(55);
-      if (document.body.classList.contains("entered")) sc.play();
+let tracks = (P.playlist || []).filter(t => t && t.src).map(t => ({ ...t }));
+if (!tracks.length) {                                    // cấu hình kiểu cũ: soundcloud / music
+  if (P.soundcloud) tracks.push({ src: P.soundcloud, title: P.musicLabel || "" });
+  if (P.music) tracks.push({ src: P.music, title: P.musicTitle || P.music });
+}
+// Link playlist SoundCloud (…/sets/…) sẽ được bung thành từng bài khi trang tải xong
+const isSet = s => /soundcloud\.com\/[^/]+\/sets\//i.test(s);
+// Khoá nhận diện một bài (bài trong playlist SoundCloud dùng id riêng của bài)
+const keyOf = t => t.set ? (t.id ? "sc:" + t.id : t.src + "#" + t.si) : t.src;
+function applySavedOrder() {                             // bài mới thêm sẽ nằm cuối
+  const saved = mstore.get("order", null);
+  if (!Array.isArray(saved)) return;
+  const rank = new Map(saved.map((s, i) => [s, i]));
+  const rk = t => rank.has(keyOf(t)) ? rank.get(keyOf(t)) : 1e9;
+  tracks.sort((a, b) => rk(a) - rk(b));
+}
+
+const M = {
+  cur: 0, kind: null, want: false, playing: false, pos: 0, dur: 0, errors: 0,
+  repeat: mstore.get("repeat", P.musicRepeat === "one" ? "one" : "all"),
+  shuffle: !!mstore.get("shuffle", !!P.musicShuffle),
+};
+const trackName = t => t.title || t._title || (t.set ? `Bài ${t.si + 1}` :
+  decodeURIComponent((t.src.split("?")[0].split("/").pop() || "").replace(/\.[a-z0-9]+$/i, "")).replace(/[-_]+/g, " "));
+const trackArtist = t => t.artist || t._artist || "";
+
+function setPlaying(on) {
+  M.playing = on;
+  $("mplayer").classList.toggle("playing", on);
+  $("wave").classList.toggle("playing", on);
+  $("mbtn").innerHTML = `<i class="fa-solid fa-${on ? "pause" : "play"}"></i>`;
+  if (on) M.errors = 0;
+  renderList();
+}
+function progress(pos, dur) {
+  M.pos = pos || 0;
+  if (dur && isFinite(dur)) M.dur = dur;
+  $("mfill").style.width = (M.dur ? Math.min(100, M.pos / M.dur * 100) : 0) + "%";
+  $("mtime").textContent = fmtT(M.dur ? M.dur - M.pos : M.pos);
+}
+function renderCard() {
+  const t = tracks[M.cur]; if (!t) return;
+  const sc1 = isSC(t.src), art = trackArtist(t);
+  $("mtitle").textContent = P.musicShowTitle === false ? (P.musicLabel || "now playing") : trackName(t);
+  $("msub").innerHTML = (sc1 ? '<i class="fa-brands fa-soundcloud"></i> ' : '<i class="fa-solid fa-music mfile"></i> ') +
+    escH(art || (sc1 ? "SoundCloud" : "Nhạc")) + (tracks.length > 1 ? ` · ${M.cur + 1}/${tracks.length}` : "");
+  $("mart").innerHTML = t._art ? `<img src="${escH(t._art)}" alt="">` : '<i class="fa-solid fa-music"></i>';
+}
+let dragging = null;
+function renderList() {
+  if (dragging || $("mpanel").hidden) return;
+  $("mplist").innerHTML = tracks.map((t, i) => {
+    const cur = i === M.cur, art = trackArtist(t);
+    return `<li class="mp-row${cur ? " cur" : ""}" data-i="${i}" tabindex="0">
+      <span class="mp-grip" title="Kéo để sắp xếp"><i class="fa-solid fa-grip-vertical"></i></span>
+      <span class="mp-num">${cur && M.playing ? '<i class="fa-solid fa-volume-high"></i>' : i + 1}</span>
+      <div class="mp-txt"><div class="mp-name">${escH(trackName(t))}</div>${art ? `<div class="mp-art">${escH(art)}</div>` : ""}</div>
+      <span class="mp-src">${isSC(t.src) ? '<i class="fa-brands fa-soundcloud"></i>' : '<i class="fa-solid fa-file-audio"></i>'}</span>
+    </li>`;
+  }).join("");
+  const r = $("mplist").children[M.cur];
+  if (r && r.scrollIntoView) r.scrollIntoView({ block: "nearest" });
+}
+function renderModes() {
+  $("mshuf").classList.toggle("on", M.shuffle);
+  $("mshuf").title = M.shuffle ? "Phát ngẫu nhiên: bật" : "Phát ngẫu nhiên: tắt";
+  $("mrep").classList.add("on");
+  $("mrep").innerHTML = '<i class="fa-solid fa-repeat"></i>' + (M.repeat === "one" ? '<span class="one">1</span>' : "");
+  $("mrep").title = M.repeat === "one" ? "Đang lặp 1 bài (bấm để lặp cả danh sách)" : "Đang lặp cả danh sách (bấm để lặp 1 bài)";
+}
+
+// --- SoundCloud: trình phát nhúng chính thức, ẩn đi; chỉ tạo khi danh sách có bài SoundCloud ---
+let sc = null, scReady = null, scLoaded = null, scAt = null;   // scLoaded: link đang nạp; scAt: bài đang đứng
+const SC_OPTS = { auto_play: false, visual: false, show_comments: false, hide_related: true };
+const scArt = snd => ((snd.artwork_url || (snd.user && snd.user.avatar_url) || "") + "").replace("-large", "-t300x300");
+function fillFromSound(t, snd) {
+  if (!snd || (t.id && snd.id && snd.id !== t.id)) return false;
+  if (snd.title) t._title = snd.title;
+  if (snd.user && snd.user.username) t._artist = snd.user.username;
+  const a = scArt(snd); if (a) t._art = a;
+  return true;
+}
+function scMeta(t) {                                     // lấy tên bài, ca sĩ, ảnh bìa, độ dài của bài đang phát
+  if (!sc || !t) return;
+  sc.getCurrentSound(snd => { if (fillFromSound(t, snd)) { if (tracks[M.cur] === t) renderCard(); renderList(); } });
+  sc.getDuration(d => { if (tracks[M.cur] === t && d) progress(M.pos, d / 1000); });
+  // Playlist dài: SoundCloud chỉ gửi đủ thông tin vài bài đầu, các bài sau được bổ sung dần khi phát
+  if (t.set && scLoaded === t.src) sc.getSounds(list => (list || []).forEach((snd, i) => {
+    const o = tracks.find(x => x.set && x.src === t.src && x.si === i);
+    if (o && !o._title) fillFromSound(o, snd);
+  }));
+}
+function getSoundsOf(w, url) {                           // nạp 1 playlist vào trình phát rồi lấy danh sách bài
+  return new Promise(res => {
+    let tries = 0;
+    const get = () => w.getSounds(list => {
+      if ((!list || !list.length) && ++tries < 6) return setTimeout(get, 500);
+      res(list || []);
     });
-    sc.bind(SC.Widget.Events.PLAY, () => { scPlaying = true; setVol(); });
-    sc.bind(SC.Widget.Events.PAUSE, () => { scPlaying = false; setVol(); });
-    const fmt = ms => { const t = Math.floor(ms / 1000); return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0"); };
-    let total = 0;
-    sc.bind(SC.Widget.Events.PLAY_PROGRESS, e => {
-      $("mfill").style.width = (e.relativePosition * 100) + "%";
-      $("mtime").textContent = fmt(total ? total - e.currentPosition : e.currentPosition);
+    if (scLoaded === url) get();
+    else { scLoaded = url; scAt = null; w.load(url, { ...SC_OPTS, callback: get }); }
+  });
+}
+async function expandSets() {
+  const first = tracks.find(t => isSet(t.src));
+  if (!first) return;
+  const w = await scInit(first.src);
+  const out = [];
+  for (const t of tracks) {
+    if (!isSet(t.src)) { out.push(t); continue; }
+    if (!w) continue;
+    const list = await getSoundsOf(w, t.src);
+    list.forEach((snd, i) => {
+      const o = { src: t.src, set: true, si: i, id: snd.id };
+      fillFromSound(o, snd);
+      out.push(o);
     });
-    sc.bind(SC.Widget.Events.READY, () => {
-      sc.getDuration(d => { total = d; $("mtime").textContent = fmt(d); });
-      sc.getCurrentSound(snd => {
-        if (!snd) return;
-        const art = (snd.artwork_url || (snd.user && snd.user.avatar_url) || "").replace("-large", "-t300x300");
-        if (art) $("mart").innerHTML = `<img src="${art}" alt="">`;
-        if (P.musicShowTitle) {                          // mặc định ẩn tên bài theo ý bạn
-          $("mtitle").textContent = snd.title || "";
-          $("msub").textContent = (snd.user && snd.user.username) || "";
-        }
+  }
+  tracks = out;
+}
+function scInit(url) {
+  if (scReady) return scReady;
+  scReady = new Promise(res => {
+    const f = document.createElement("iframe");
+    f.id = "sc"; f.allow = "autoplay";
+    f.src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(url) +
+            "&auto_play=false&visual=false&show_comments=false&hide_related=true";
+    f.style.cssText = "position:fixed;left:-9999px;top:0;width:300px;height:166px;border:0";
+    document.body.appendChild(f);
+    scLoaded = url;
+    const s = document.createElement("script");
+    s.src = "https://w.soundcloud.com/player/api.js";
+    s.onload = () => {
+      sc = SC.Widget(f);
+      const E = SC.Widget.Events;
+      sc.bind(E.READY, () => { sc.setVolume(55); res(sc); });
+      sc.bind(E.PLAY, () => {
+        if (M.kind !== "sc") return;
+        if (!M.want) { sc.pause(); return; }               // đã bấm dừng trong lúc SoundCloud đang khởi động
+        setPlaying(true);
+        scMeta(tracks[M.cur]);
       });
-    });
-    $("mbar").onclick = e => {
-      const r = $("mbar").getBoundingClientRect();
-      sc.getDuration(d => sc.seekTo(d * (e.clientX - r.left) / r.width));
+      sc.bind(E.PAUSE, () => { if (M.kind === "sc") setPlaying(false); });
+      sc.bind(E.FINISH, () => { if (M.kind === "sc") onEnded(); });
+      sc.bind(E.PLAY_PROGRESS, e => { if (M.kind === "sc") progress(e.currentPosition / 1000); });
+      sc.bind(E.ERROR, () => { if (M.kind === "sc") onError(); });
     };
-    sc.bind(SC.Widget.Events.FINISH, () => { sc.seekTo(0); sc.play(); });   // phát lặp lại
+    s.onerror = () => res(null);
+    document.head.appendChild(s);
+  });
+  return scReady;
+}
+async function scStart(t) {
+  const w = await scInit(t.src);
+  if (tracks[M.cur] !== t || M.kind !== "sc") return;     // đã chuyển sang bài khác trong lúc chờ
+  if (!w) return onError();
+  const go = () => {
+    if (tracks[M.cur] !== t) return;
+    if (t.set) {
+      // Bài trong playlist: nhảy tới đúng bài (chỉ khi cần phát, để khỏi tự phát lúc mới vào trang)
+      if (M.want) { w.skip(t.si); scAt = keyOf(t); w.play(); }
+    } else {
+      scAt = keyOf(t); w.seekTo(0);
+      if (M.want) w.play();
+    }
+    scMeta(t);
   };
-  document.head.appendChild(s);
+  if (scLoaded === t.src) go();
+  else { scLoaded = t.src; scAt = null; w.load(t.src, { ...SC_OPTS, callback: go }); }
+}
+
+// --- File mp3 trong thư mục ---
+audio.addEventListener("play", () => {
+  if (M.kind !== "file") return;
+  if (!M.want) { audio.pause(); return; }
+  setPlaying(true);
+});
+audio.addEventListener("pause", () => { if (M.kind === "file") setPlaying(false); });
+audio.addEventListener("ended", () => { if (M.kind === "file") onEnded(); });
+audio.addEventListener("timeupdate", () => { if (M.kind === "file") progress(audio.currentTime, audio.duration); });
+audio.addEventListener("loadedmetadata", () => { if (M.kind === "file") progress(audio.currentTime, audio.duration); });
+audio.addEventListener("error", () => { if (M.kind === "file" && audio.getAttribute("src")) onError(); });
+
+// --- Điều khiển chung ---
+function load(i, autoplay) {
+  if (!tracks.length) return;
+  M.cur = ((i % tracks.length) + tracks.length) % tracks.length;
+  const t = tracks[M.cur];
+  if (autoplay) M.want = true;
+  audio.pause(); if (sc) sc.pause();
+  M.kind = isSC(t.src) ? "sc" : "file";
+  M.dur = 0; progress(0);
+  setPlaying(false); renderCard();
+  if (M.kind === "file") {
+    audio.volume = .55;
+    if (audio.getAttribute("src") !== t.src) audio.src = t.src; else audio.currentTime = 0;
+    if (M.want) audio.play().catch(() => {});
+  } else scStart(t);
+  if ("mediaSession" in navigator && window.MediaMetadata) {
+    navigator.mediaSession.metadata = new MediaMetadata({ title: trackName(t), artist: trackArtist(t) });
+  }
+}
+function play() {
+  M.want = true;
+  const t = tracks[M.cur];
+  if (M.kind === "file") audio.play().catch(() => {});
+  else if (sc && t) scAt === keyOf(t) ? sc.play() : scStart(t);   // chưa đứng đúng bài → nạp/nhảy tới bài đó
+}
+function pause() { M.want = false; audio.pause(); if (sc) sc.pause(); }
+function step(dir) {
+  if (M.shuffle && tracks.length > 1) {
+    let j; do j = Math.floor(Math.random() * tracks.length); while (j === M.cur);
+    return load(j, true);
+  }
+  load(M.cur + dir, true);
+}
+function onEnded() { M.repeat === "one" ? load(M.cur, true) : step(1); }
+function onError() {
+  // bài lỗi (sai tên file, mất mạng…) → bỏ qua sang bài sau; lỗi hết cả danh sách thì dừng
+  if (++M.errors >= tracks.length) { M.want = false; setPlaying(false); if (typeof toast === "function") toast("Không phát được bài nào trong danh sách nhạc"); return; }
+  setTimeout(() => step(1), 400);
+}
+function seekTo(frac) {
+  if (M.kind === "file" && audio.duration) audio.currentTime = audio.duration * frac;
+  else if (M.kind === "sc" && sc) sc.getDuration(d => sc.seekTo(d * frac));
+}
+
+// --- Bảng danh sách nhạc ---
+function placePanel() {
+  const p = $("mpanel"), r = $("mplayer").getBoundingClientRect();
+  const w = p.offsetWidth, h = p.offsetHeight, vw = innerWidth, vh = innerHeight;
+  const left = Math.min(Math.max(16, r.right - w), vw - w - 16);
+  let top = r.bottom + 8;
+  if (top + h > vh - 12) top = r.top - 8 - h >= 12 ? r.top - 8 - h : Math.max(12, vh - 12 - h);
+  p.style.left = left + "px"; p.style.top = top + "px";
+}
+function showPanel(on) {
+  $("mpanel").hidden = !on;
+  $("mlist").classList.toggle("on", on);
+  $("mlist").setAttribute("aria-expanded", on);
+  if (on) { renderModes(); renderList(); placePanel(); }
+}
+
+if (tracks.length) {
+  $("mplayer").hidden = false;
+  $("mbtn").onclick = () => M.playing ? pause() : play();
+  $("mlist").onclick = e => { e.stopPropagation(); showPanel($("mpanel").hidden); };
+  $("mbar").onclick = e => { const r = $("mbar").getBoundingClientRect(); seekTo((e.clientX - r.left) / r.width); };
+  $("mnext").onclick = () => step(1);
+  $("mprev").onclick = () => M.pos > 3 && !M.shuffle ? load(M.cur, true) : step(-1);
+  $("mshuf").onclick = () => { M.shuffle = !M.shuffle; mstore.set("shuffle", M.shuffle); renderModes(); };
+  $("mrep").onclick = () => { M.repeat = M.repeat === "one" ? "all" : "one"; mstore.set("repeat", M.repeat); renderModes(); };
+  document.addEventListener("pointerdown", e => {
+    if (!$("mpanel").hidden && !e.target.closest("#mpanel, #mlist")) showPanel(false);
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("mpanel").hidden) showPanel(false); });
+  addEventListener("resize", () => { if (!$("mpanel").hidden) placePanel(); });
+
+  const list = $("mplist");
+  const pick = row => { const i = +row.dataset.i; i === M.cur ? (M.playing ? pause() : play()) : load(i, true); };
+  list.addEventListener("click", e => {
+    const row = e.target.closest(".mp-row");
+    if (row && !e.target.closest(".mp-grip")) pick(row);
+  });
+  list.addEventListener("keydown", e => {
+    const row = e.target.closest(".mp-row");
+    if (row && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); pick(row); }
+  });
+  // Kéo thả bằng tay nắm ⋮⋮ (chuột + cảm ứng): dòng đang kéo bám theo tay,
+  // các dòng khác trượt mềm sang chỗ mới (kỹ thuật FLIP), gần mép thì danh sách tự cuộn.
+  const SLIDE = "transform .2s cubic-bezier(.2,.8,.2,1)";
+  let grabOff = 0, lastY = 0, raf = 0, settling = false;
+  const slotTop = r => r.offsetTop;                       // vị trí thật trong danh sách (không tính transform)
+  function follow() {
+    if (!dragging) return;
+    const lr = list.getBoundingClientRect(), h = dragging.offsetHeight;
+    const want = Math.max(0, Math.min(list.scrollHeight - h, lastY - lr.top + list.scrollTop - grabOff));
+    const mid = want + h / 2;
+    const before = [...list.children].find(r => r !== dragging && slotTop(r) + r.offsetHeight / 2 > mid) || null;
+    if (dragging.nextElementSibling !== before) {
+      const others = [...list.children].filter(r => r !== dragging);
+      const old = new Map(others.map(r => [r, slotTop(r)]));
+      list.insertBefore(dragging, before);
+      others.forEach(r => {
+        const d = old.get(r) - slotTop(r);
+        if (!d) return;
+        r.style.transition = "none"; r.style.transform = `translateY(${d}px)`;
+        r.getBoundingClientRect();                          // ép trình duyệt vẽ vị trí cũ trước khi trượt
+        r.style.transition = SLIDE; r.style.transform = "";
+      });
+    }
+    dragging.style.transform = `translateY(${want - slotTop(dragging)}px) scale(1.02)`;
+  }
+  function autoScroll() {
+    if (!dragging) return;
+    const lr = list.getBoundingClientRect(), edge = 36;
+    const v = lastY < lr.top + edge ? -(lr.top + edge - lastY) / 3 : lastY > lr.bottom - edge ? (lastY - lr.bottom + edge) / 3 : 0;
+    if (v) { list.scrollTop += Math.max(-14, Math.min(14, v)); follow(); }
+    raf = requestAnimationFrame(autoScroll);
+  }
+  list.addEventListener("pointerdown", e => {
+    const g = e.target.closest(".mp-grip"); if (!g || settling) return;
+    e.preventDefault();
+    dragging = g.closest(".mp-row");
+    grabOff = e.clientY - dragging.getBoundingClientRect().top;
+    lastY = e.clientY;
+    dragging.style.transition = "none";
+    dragging.classList.add("drag");
+    list.classList.add("sorting");
+    try { g.setPointerCapture(e.pointerId); } catch (err) {}
+    follow();
+    raf = requestAnimationFrame(autoScroll);
+  });
+  list.addEventListener("pointermove", e => { if (dragging) { lastY = e.clientY; follow(); } });
+  const endDrag = () => {
+    if (!dragging) return;
+    cancelAnimationFrame(raf);
+    const row = dragging;
+    const curT = tracks[M.cur];
+    tracks = [...list.children].map(r => tracks[+r.dataset.i]);
+    M.cur = tracks.indexOf(curT);
+    mstore.set("order", tracks.map(keyOf));
+    // thả ra: dòng trượt nhẹ về đúng chỗ rồi mới vẽ lại danh sách
+    settling = true;
+    row.style.transition = SLIDE; row.style.transform = "";
+    setTimeout(() => {
+      row.classList.remove("drag"); list.classList.remove("sorting");
+      dragging = null; settling = false;
+      renderList(); renderCard();
+    }, 210);
+  };
+  list.addEventListener("pointerup", endDrag);
+  list.addEventListener("pointercancel", endDrag);
+
+  if ("mediaSession" in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler("nexttrack", () => step(1));
+      navigator.mediaSession.setActionHandler("previoustrack", () => step(-1));
+    } catch (e) {}
+  }
+  renderModes();
+  (async () => {
+    if (tracks.some(t => isSet(t.src))) {                 // có playlist SoundCloud: lấy danh sách bài trước
+      $("mtitle").textContent = "Đang tải danh sách…";
+      $("msub").innerHTML = '<i class="fa-brands fa-soundcloud"></i> SoundCloud';
+      await expandSets();
+    }
+    applySavedOrder();
+    if (!tracks.length) { $("mplayer").hidden = true; return; }
+    // chuẩn bị sẵn bài đầu; nếu người xem đã bấm vào trang trong lúc chờ thì phát luôn
+    load(M.shuffle ? Math.floor(Math.random() * tracks.length) : 0, false);
+  })();
 }
 
 $("enter").onclick = () => {
@@ -1188,8 +1676,7 @@ $("enter").onclick = () => {
   document.body.classList.add("entered");
   alignAvatar(); setTimeout(alignAvatar, 1300); setTimeout(alignAvatar, 2500);
   setTimeout(playIntro, 150);
-  if (sc) sc.play();
-  else if (P.music) { audio.volume = .5; audio.play().catch(() => {}); }
+  if (tracks.length) play();
   if (P.bgVideo) $("bg-video").play().catch(() => {});
 };
 
