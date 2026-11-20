@@ -271,7 +271,23 @@
   body.entered .wand-btn { opacity: 1; transition: opacity .6s 1s, transform .2s, background .2s, box-shadow .2s; }
   .wand-btn:hover { transform: translateZ(30px) scale(1.1); }
   .wand-btn.on { background: #ffd36b; color: #3a2a06; box-shadow: 0 0 16px rgba(255,211,107,.7); }
-  body.wand .profile { cursor: crosshair; }
+  body.wand .profile { cursor: crosshair; touch-action: none; -webkit-user-select: none; user-select: none; }
+  body.wand { overscroll-behavior: none; }
+  @media (hover: none) {
+    .wand-btn { width: 44px; height: 44px; font-size: 1.1rem; top: 10px; right: 10px; }
+  }
+  /* ===== Bản nhẹ cho điện thoại: bỏ các bộ lọc tốn GPU ===== */
+  html.lite .grain { display: none; }
+  html.lite .profile::before { backdrop-filter: none; -webkit-backdrop-filter: none;
+    background: linear-gradient(160deg, rgba(10,18,28,.42), rgba(6,10,16,.5)); }
+  html.lite .mplayer, html.lite .row2 .presence { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(40,48,60,.78); }
+  html.lite #enter { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(0,0,0,.9); }
+  html.lite #bg-video, html.lite body.bg-color #bg-video, html.lite #bg-image { filter: none !important; }
+  html.lite .storm-svg .bolts, html.lite .storm-svg .kblade { filter: none !important; animation: none !important; }
+  html.lite .f-storm .avatar { animation: none; }
+  html.lite .name { animation: none; text-shadow: 0 0 10px rgba(255,255,255,.5); }
+  html.lite .socials a, html.lite .badges i { filter: none; }
+  html.lite .profile, html.lite .profile > * { transform-style: flat; }
   .cat-layer {
     position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
     border-radius: 22px; transform: translateZ(-.5px); opacity: 0; transition: opacity .8s .6s;
@@ -588,6 +604,8 @@ const PROFILE = {
     { color: "#2b2b30", dark: "#1a1a1e", patch: "#f2f2f2", size: .9 },     // mèo mun mõm trắng
   ],
 
+  liteMode: "auto",           // "auto" = tự bật bản nhẹ trên điện thoại | true = luôn nhẹ | false = luôn đầy đủ hiệu ứng
+
   // HIỆU ỨNG
   // HIỆU ỨNG MỞ ĐẦU: một ảnh GIF hiện lên phủ màn hình khi vào trang rồi mờ dần biến mất
   introEffect: "gif",         // "gif" | "none" = tắt
@@ -736,6 +754,11 @@ const AVATAR_EMBED = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD//gAEKgD
 
 <script>
 const P = PROFILE, $ = id => document.getElementById(id);
+// Chế độ nhẹ: tắt các hiệu ứng tốn GPU trên điện thoại / máy yếu để không bị lag
+const LITE = P.liteMode === "auto" || P.liteMode === undefined
+  ? (matchMedia("(hover: none)").matches || innerWidth < 768 || (navigator.hardwareConcurrency || 8) <= 4)
+  : !!P.liteMode;
+if (LITE) document.documentElement.classList.add("lite");
 const rand = (a, b) => a + Math.random() * (b - a);
 const hover = matchMedia("(hover: hover)").matches;
 
@@ -787,7 +810,7 @@ if (P.avatarFrame === "devil") {
       <g transform="matrix(-1 0 0 1 400 0)">${horn}</g>
     </g>
   </svg>`);
-  if (P.embers) setInterval(() => {
+  if (P.embers && !LITE) setInterval(() => {
     if (!document.body.classList.contains("entered")) return;
     const e = document.createElement("span");
     e.className = "ember";
@@ -916,8 +939,8 @@ if (P.avatarFrame === "storm") {
       back += line(d, 3, false) + line(d, 1, true);
     }
     $("bolts-back").innerHTML = back; $("bolts-front").innerHTML = front;
-  }, 90);
-  if (P.embers) setInterval(() => {
+  }, LITE ? 200 : 90);
+  if (P.embers && !LITE) setInterval(() => {
     if (!document.body.classList.contains("entered")) return;
     const e = document.createElement("span");
     e.className = "ember";
@@ -1081,9 +1104,9 @@ if (["sparkle", "both"].includes(P.nameEffect)) {
     s.style.left = rand(-8, 100) + "%"; s.style.top = rand(-20, 90) + "%";
     s.style.fontSize = rand(8, 15) + "px";
     wrap.appendChild(s); setTimeout(() => s.remove(), 1200);
-  }, 220);
+  }, LITE ? 700 : 220);
 }
-if (["glitch", "both"].includes(P.nameEffect)) {
+if (!LITE && ["glitch", "both"].includes(P.nameEffect)) {
   const n = $("name");
   (function g() {
     setTimeout(() => { n.classList.add("glitch"); setTimeout(() => { n.classList.remove("glitch"); g(); }, 350); }, rand(2500, 5000));
@@ -1688,7 +1711,7 @@ addEventListener("resize", alignAvatar);
 
   function layout() {
     const r = prof.getBoundingClientRect();
-    dpr = Math.min(devicePixelRatio || 1, 2);
+    dpr = LITE ? 1.25 : Math.min(devicePixelRatio || 1, 2);
     W = prof.offsetWidth; H = prof.offsetHeight;
     cv.width = W * dpr; cv.height = H * dpr;
     floor = H - 10;
@@ -1923,14 +1946,25 @@ addEventListener("resize", alignAvatar);
     document.body.classList.toggle("wand", wand.on);
     if (wand.on) {
       prof.style.transform = "";
-      wand.lx = wand.px = W - 60; wand.ly = wand.py = 60;
-      toast("Đã cầm gậy mèo — di chuột / kéo tay trong thẻ để nhử mèo");
+      if (TOUCH) { wand.ax = W / 2; wand.ay = floor - 120; wand.lx = wand.px = W / 2; wand.ly = wand.py = floor - 60; }
+      else { wand.lx = wand.px = W - 60; wand.ly = wand.py = 60; }
+      toast(TOUCH ? "Đã cầm gậy mèo — chạm và kéo trong thẻ để nhử mèo" : "Đã cầm gậy mèo — di chuột trong thẻ để nhử mèo");
     } else {
       cats.forEach(c => { if (c.state === "hunt" || c.state === "watch") choose(c); });
     }
   };
+  const TOUCH = matchMedia("(hover: none)").matches;
+  prof.addEventListener("pointerdown", e => {
+    if (!wand.on || e.target.closest("a, button, .mplayer, .presence")) return;
+    [wand.ax, wand.ay] = local(e);
+    if (e.pointerType !== "mouse") {
+      e.preventDefault();
+      try { prof.setPointerCapture(e.pointerId); } catch (_) {}   // kéo ra ngoài thẻ vẫn điều khiển được
+    }
+  });
   prof.addEventListener("pointermove", e => { if (wand.on) [wand.ax, wand.ay] = local(e); });
-  prof.addEventListener("pointerleave", () => { wand.ax = wand.ay = -999; });
+  // chuột rời thẻ thì thả gậy; trên cảm ứng nhấc tay ra thì gậy vẫn đứng yên ở chỗ cũ
+  prof.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") wand.ax = wand.ay = -999; });
 
   function stepWand(k) {
     if (!wand.on) return;
@@ -1970,14 +2004,14 @@ addEventListener("resize", alignAvatar);
   }
   // Mèo đuổi + nhảy vồ mồi
   function huntAI(c, dt) {
-    if (wand.ly < floor - 150) { c.state = "watch"; c.dir = wand.lx > c.x ? 1 : -1; return; }   // mồi cao quá: ngồi ngóng
+    if (wand.ly < floor - (TOUCH ? 190 : 150)) { c.state = "watch"; c.dir = wand.lx > c.x ? 1 : -1; return; }   // mồi cao quá: ngồi ngóng
     c.state = "hunt";
     const dx = wand.lx - c.x; c.dir = dx > 0 ? 1 : -1;
     if (Math.abs(dx) > 16 && c.jy === 0) { c.x += c.dir * Math.min(Math.abs(dx), c.speed * 2.4 * dt * .05); c.phase += dt * .035; }
-    else if (c.jy === 0 && wand.ly > floor - 95 && Math.random() < .08)
-      c.vy = Math.min(10, Math.sqrt(2 * .6 * Math.max(10, floor - wand.ly - 8)) + 1);        // nhảy vồ
+    else if (c.jy === 0 && wand.ly > floor - (TOUCH ? 125 : 95) && Math.random() < .08)
+      c.vy = Math.min(TOUCH ? 12 : 10, Math.sqrt(2 * .6 * Math.max(10, floor - wand.ly - 8)) + 1);        // nhảy vồ
     const hx = c.x + c.dir * 12 * c.size, hy = floor - c.jy - 18 * c.size;
-    if (wand.cool <= 0 && Math.hypot(wand.lx - hx, wand.ly - hy) < 16) {                     // bắt được!
+    if (wand.cool <= 0 && Math.hypot(wand.lx - hx, wand.ly - hy) < (TOUCH ? 22 : 16)) {                     // bắt được!
       wand.cool = 900; wand.py = wand.ly - 9;
       pop(c.x, floor - c.jy - 40, "text", Math.random() < .5 ? "gotcha!" : "nya!!");
       pop(c.x + rand(-8, 8), floor - c.jy - 30, "heart");
@@ -2041,10 +2075,10 @@ const fv = $("fx"), fx = fv.getContext("2d");
 let W, H, dpr, layers = [], stars = [], drops = [], meteors = [];
 
 function build() {
-  dpr = Math.min(devicePixelRatio || 1, 2);
+  dpr = LITE ? 1 : Math.min(devicePixelRatio || 1, 2);
   W = cv.width = fv.width = innerWidth * dpr; H = cv.height = fv.height = innerHeight * dpr;
   stars = Array.from({ length: 110 }, () => ({ x: rand(0, W), y: rand(0, H * .5), r: rand(.3, 1.2) * dpr, p: rand(0, 6) }));
-  const n = P.weather === "snow" ? 160 : P.weather === "rain" ? Math.round(innerWidth / 5) : 0;
+  const n = P.weather === "snow" ? 160 : P.weather === "rain" ? (LITE ? 70 : Math.round(innerWidth / 5)) : 0;
   drops = Array.from({ length: n }, () => newDrop(true));
   const cfg = [
     { shade: 34, minH: .18, maxH: .45, minW: 22, maxW: 60, depth: .2, win: .25 },
@@ -2162,6 +2196,7 @@ function draw(t) {
 
   const snow = P.weather === "snow";
   fx.lineCap = "round";
+  const rainB = [[], [], []];
   for (const d of drops) {
     d.y += d.vy; d.x += snow ? d.vx + Math.sin(t / 900 + d.p) * .4 * dpr : d.vx;
     if (snow) {
@@ -2174,13 +2209,16 @@ function draw(t) {
           splashes.push({ x: d.x, y: d.y, vx: rand(-1.5, 1.5) * dpr, vy: rand(-3, -1.2) * dpr, life: 1 });
         Object.assign(d, newDrop(false));
       }
-      const g = fx.createLinearGradient(d.x, d.y - d.len, d.x, d.y);
-      g.addColorStop(0, "rgba(255,255,255,0)");
-      g.addColorStop(1, `rgba(235,235,235,${.25 + d.z * .45})`);
-      fx.strokeStyle = g; fx.lineWidth = (.6 + d.z * 1.1) * dpr;
-      fx.beginPath(); fx.moveTo(d.x - d.vx * 4, d.y - d.len); fx.lineTo(d.x, d.y); fx.stroke();
+      rainB[d.z < .55 ? 0 : d.z < .8 ? 1 : 2].push(d);
     }
   }
+  // vẽ mưa theo nhóm: mỗi nhóm 1 lần stroke
+  [[.32, .75], [.5, 1.1], [.72, 1.5]].forEach(([a, w], i) => {
+    if (!rainB[i].length) return;
+    fx.strokeStyle = `rgba(235,235,235,${a})`; fx.lineWidth = w * dpr; fx.beginPath();
+    for (const d of rainB[i]) { fx.moveTo(d.x - d.vx * 4, d.y - d.len); fx.lineTo(d.x, d.y); }
+    fx.stroke();
+  });
   // Giọt bắn khi chạm đất
   fx.fillStyle = "rgba(230,230,230,.6)";
   for (const s of splashes) {
