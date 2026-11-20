@@ -720,6 +720,7 @@ const PROFILE = {
   avatarFrame: "storm",       // "storm" (sấm + 2 katana + mặt nạ ninja) | "devil" (sừng + cánh ác quỷ) | "orbit" | "moon" | "pulse" | "none"
   stormColor: "#4fc8ff",      // màu sấm + dây quấn chuôi kiếm của kiểu "storm"
   katanaPose: "hold",         // "hold" = hai tay cầm hai thanh kiếm | "cross" = hai thanh bắt chéo sau avatar
+  avatarWeapon: "claw",       // vũ khí 2 tay: "claw" = vuốt sét 3 lưỡi gắn trên cổ tay | "katana" = cầm kiếm
   ninjaMask: false,           // true = đeo mặt nạ + khăn ninja lên ảnh (kiểu "storm")
   devilColor: "#ff1a1a",      // màu sừng/cánh/viền của kiểu "devil"
   embers: true,               // tia lửa bay lên quanh avatar (kiểu "devil")
@@ -1026,6 +1027,40 @@ if (P.avatarFrame === "storm") {
     <path d="${wrap}" stroke="${c}" stroke-opacity=".85" stroke-width="1.6"/>
     <rect x="-1" y="-5.8" width="7" height="11.6" rx="2" fill="#3a4858" stroke="${c}" stroke-opacity=".6" stroke-width=".8"/>
     <g class="bolts" id="${id}"></g>`;
+  // Vuốt sét đeo trên tay (tự thiết kế). Tất cả nằm thẳng MỘT trục: x dọc theo cánh tay hướng ra mũi lưỡi (= hướng lên),
+  // y ngang cánh tay (+y = phía trong, hướng vào avatar).
+  //   Lớp sau (sau avatar): giáp cẳng tay, nhạt dần về phía khuỷu.
+  //   Lớp trước: nắm đấm hướng lên (thấy mu bàn tay, đốt ngón tay ở đầu) → 3 lưỡi vuốt nằm giữa mu bàn tay,
+  //   đè lên bàn tay, vươn thẳng theo hướng cánh tay → tấm giáp gắn lưỡi trên mu bàn tay.
+  // CLAWS: [lệch ngang y0, chiều dài, độ xoè]
+  const CB = 40;                                         // chân lưỡi (nằm dưới mép trước tấm giáp, gần đốt ngón tay)
+  const CLAWS = [[-6, 196, -.04], [0, 230, 0], [6, 196, .04]];
+  const clawY = ([y0, L, sp], x) => { const t = (x - CB) / L; return y0 + sp * (x - CB) - 7 * t * t; };  // hơi cong
+  const clawBack = () => `
+    <path d="M-60,-13 L12,-15 Q18,-14.5 18,-9 L18,9 Q18,14.5 12,15 L-60,13 Z" fill="url(#bracerFill)"/>
+    <path d="M-34,-13.7 V13.7 M-12,-14.4 V14.4 M4,-14.8 V14.8" stroke="${c}" stroke-width="1.2" opacity=".75"/>
+    <path d="M-60,-13 L12,-15 Q18,-14.5 18,-9 L18,9 Q18,14.5 12,15 L-60,13" fill="none" stroke="url(#bracerEdge)" stroke-width="1.2"/>`;
+  const clawFront = (id) => {
+    const SK = "#f2c79a", SKD = "#6b4226";
+    const hand = `
+      <path d="M18,13.5 Q30,21 41,16.5 Q44,13.5 39,12 Z" fill="${SK}" stroke="${SKD}" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M8,-12.5 Q27,-16 42,-13.5 Q49,-12.5 49,-6 L49,7 Q49,13.5 42,14.5 Q26,17 8,13.5 Z" fill="${SK}" stroke="${SKD}" stroke-width="1.1"/>
+      <path d="M47,-13 Q55.5,-12.5 55.5,-6 L55.5,7 Q55.5,13.5 47,14 Z" fill="#e3b083" stroke="${SKD}" stroke-width="1.1"/>
+      <path d="M49.5,-6.4 H55.5 M49.5,.3 H55.5 M49.5,7 H55.5" stroke="${SKD}" stroke-width=".8" opacity=".7"/>
+      ${[-9.6, -3.2, 3.4, 9.8].map(y => `<circle cx="47.5" cy="${y}" r="3.2" fill="#f8dcbb" stroke="${SKD}" stroke-width=".9"/>`).join("")}`;
+    const blades = CLAWS.map(b => {
+      const [y0, L] = b, tx = CB + L, ty = clawY(b, tx), cx = CB + L * .55, cy = clawY(b, cx);
+      return `<path d="M${CB},${y0 - 3} Q${cx},${cy - 3} ${tx},${ty} Q${cx},${cy + 3.4} ${CB},${y0 + 3} Z" fill="url(#bladeFill)" stroke="#ffffff" stroke-opacity=".7" stroke-width=".6"/>` +
+             `<path d="M${CB + 8},${y0} Q${cx},${cy + .3} ${tx - 8},${ty + .2}" fill="none" stroke="${c}" stroke-width="1.1" opacity=".95"/>`;
+    }).join("");
+    const plate = `
+      <path d="M22,-8 L40,-7.5 Q45,-7 45,-4.5 L45,4.5 Q45,7 40,7.5 L22,8 Z" fill="url(#gauntFill)" stroke="${c}" stroke-width="1.2" stroke-linejoin="round"/>
+      <path d="M12,-3 L23,-3.5 M12,3 L23,3.5" stroke="${c}" stroke-width="1.4" opacity=".85"/>
+      ${CLAWS.map(([y0]) => `<circle cx="42" cy="${y0}" r="1.6" fill="${c}"/>`).join("")}`;
+    return `${hand}<g class="kblade">${blades}</g>${plate}<g class="bolts" id="${id}"></g>`;
+  };
+  const CLAW = P.avatarWeapon !== "katana";
+  const weapon = id => CLAW ? clawBack() : katana(id);   // vuốt: lớp sau chỉ có giáp cẳng tay
   const defs = `
     <defs>
       <linearGradient id="bladeFill" x1="0" y1="0" x2="0" y2="1">
@@ -1037,7 +1072,14 @@ if (P.avatarFrame === "storm") {
       <linearGradient id="clothFill" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#1c2633"/><stop offset="1" stop-color="#0a0f16"/>
       </linearGradient>
-      <clipPath id="faceClip"><circle cx="200" cy="150" r="50"/></clipPath>    </defs>`;
+      <clipPath id="faceClip"><circle cx="200" cy="150" r="50"/></clipPath>
+      <linearGradient id="bracerFill" gradientUnits="userSpaceOnUse" x1="-58" y1="0" x2="-14" y2="0">
+        <stop offset="0" stop-color="#2a3644" stop-opacity="0"/><stop offset="1" stop-color="#2a3644"/>
+      </linearGradient>
+      <linearGradient id="bracerEdge" gradientUnits="userSpaceOnUse" x1="-58" y1="0" x2="-14" y2="0">
+        <stop offset="0" stop-color="${c}" stop-opacity="0"/><stop offset="1" stop-color="${c}"/>
+      </linearGradient>
+    </defs>`;
   // "hold" = hai tay cầm hai thanh kiếm dựng chéo ra hai bên | "cross" = hai thanh bắt chéo sau avatar
   const HOLD = P.katanaPose !== "cross";
   const KPOSE = HOLD ? "translate(122,214) rotate(-110) scale(.74) translate(-34,0)" : "translate(70,222) rotate(-36)";
@@ -1053,11 +1095,12 @@ if (P.avatarFrame === "storm") {
     ${fingers}
     <path d="M46,16 Q45,4 47,-4 Q48.5,-8.5 52.5,-8.5 Q56.5,-8.5 57,-4 Q58,6 56,16 Z" fill="${SK}" stroke="${SKD}" stroke-width="1.1" stroke-linejoin="round"/>
     <rect x="48.6" y="-7.2" width="6.4" height="5.6" rx="2.4" fill="${SKL}" stroke="${SKD}" stroke-width=".7" opacity=".95"/>`;
-  const handAt = `<g transform="${KPOSE}">${fist}</g>`;
-  const hands = HOLD ? `${handAt}<g transform="matrix(-1 0 0 1 400 0)">${handAt}</g>` : "";
+  // vuốt: lớp trước = nắm đấm + lưỡi vuốt + tấm giáp (mỗi bên 1 khung sét riêng); kiếm: lớp trước = bàn tay nắm chuôi
+  const handAt = id => `<g transform="${KPOSE}">${CLAW ? clawFront(id) : fist}</g>`;
+  const hands = HOLD ? `${handAt("kb-l")}<g transform="matrix(-1 0 0 1 400 0)">${handAt("kb-r")}</g>` : "";
   box.insertAdjacentHTML("afterbegin", `
-  <svg class="storm-svg storm-back" viewBox="0 0 400 260" aria-hidden="true">${defs}    <g transform="${KPOSE}">${katana("kb-l")}</g>
-    <g transform="matrix(-1 0 0 1 400 0)"><g transform="${KPOSE}">${katana("kb-r")}</g></g>
+  <svg class="storm-svg storm-back" viewBox="0 0 400 260" aria-hidden="true">${defs}    <g transform="${KPOSE}">${weapon("kb-l")}</g>
+    <g transform="matrix(-1 0 0 1 400 0)"><g transform="${KPOSE}">${weapon("kb-r")}</g></g>
     <g class="bolts" id="bolts-back"></g>
   </svg>`);
   // Mặt nạ vải che nửa dưới + khăn buộc đầu có 2 đuôi bay
@@ -1182,12 +1225,20 @@ if (P.avatarFrame === "storm") {
         back += strike(zap(x, 92, x + rand(-30, 30), rand(6, 30), 14, 5), 1.1);
       }
     }
-    // Sét chạy dọc lưỡi kiếm (toạ độ theo trục của thanh kiếm)
+    // Sét chạy dọc lưỡi kiếm / lưỡi vuốt (toạ độ theo trục của vũ khí)
     for (const id of ["kb-l", "kb-r"]) {
       let k = "";
       if (Math.random() < .8) {
-        const yc = x => -12 * ((x - 76) / 220) ** 2, x0 = rand(78, 130), x1 = rand(230, 306);
-        k = strike(zap(x0, yc(x0) + rand(-4, 4), x1, yc(x1) + rand(-4, 4), 11, 5), 1.2);
+        if (CLAW) {                                        // vuốt: sét chạy trên 1–2 lưỡi ngẫu nhiên
+          for (let n = Math.random() < .4 ? 2 : 1; n > 0; n--) {
+            const b = CLAWS[Math.floor(Math.random() * CLAWS.length)];
+            const xa = CB + rand(40, 80), xb = CB + b[1] * rand(.7, .97);
+            k += strike(zap(xa, clawY(b, xa) + rand(-3, 3), xb, clawY(b, xb) + rand(-3, 3), 9, 5), 1.1);
+          }
+        } else {
+          const yc = x => -12 * ((x - 76) / 220) ** 2, x0 = rand(78, 130), x1 = rand(230, 306);
+          k = strike(zap(x0, yc(x0) + rand(-4, 4), x1, yc(x1) + rand(-4, 4), 11, 5), 1.2);
+        }
       }
       $(id).innerHTML = k;
     }
