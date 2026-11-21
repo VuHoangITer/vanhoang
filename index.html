@@ -96,7 +96,7 @@
     text-shadow: 0 0 14px var(--glow);
     animation: pulse 2.2s ease-in-out infinite;
   }
-  #enter.hide { opacity: 0; visibility: hidden; }
+  #enter.hide { opacity: 0; visibility: hidden; pointer-events: none; }   /* đang mờ dần cũng không chặn bấm */
   /* màn "click to enter" đã ẩn thì dừng hẳn hiệu ứng chữ: đổi letter-spacing liên tục bắt trình duyệt
      tính lại bố cục mỗi khung hình dù không nhìn thấy */
   #enter.hide span { animation: none; }
@@ -1898,6 +1898,7 @@ if (tracks.length) {
 
 $("enter").onclick = () => {
   $("enter").classList.add("hide");
+  setTimeout(() => { $("enter").hidden = true; }, 1100);   // mờ xong thì gỡ hẳn, khỏi chặn bấm dù hiệu ứng bị chậm
   document.body.classList.add("entered");
   alignAvatar(); setTimeout(alignAvatar, 1300); setTimeout(alignAvatar, 2500);
   setTimeout(playIntro, 150);
@@ -2217,9 +2218,34 @@ addEventListener("resize", alignAvatar);
   const MEOWS = ["meow~", "nya!", "mrrp?", "prrr...", "meo meo", "♥"];
 
   // ---- Toạ độ chuột / ngón tay trong thẻ ----
+  // Thẻ nghiêng 3D theo chuột có phối cảnh (và có thể bị thu nhỏ cho vừa màn hình), nên không thể lấy khung bao ngoài
+  // rồi chia tỉ lệ — lệch tới ~28px ở đáy thẻ chỗ mèo ngồi. Cách làm: 4 điểm mốc vô hình ở 4 góc thẻ; trình duyệt cho
+  // biết chính xác 4 góc đang nằm đâu trên màn hình → dựng phép biến đổi phối cảnh (homography) rồi tính ngược điểm bấm.
+  const corners = [0, 1, 2, 3].map(i => {             // 0 trên-trái, 1 trên-phải, 2 dưới-trái, 3 dưới-phải
+    const d = document.createElement("i");
+    d.setAttribute("aria-hidden", "true");
+    d.style.cssText = "position:absolute;width:0;height:0;pointer-events:none;grid-column:auto;grid-row:auto;" +
+                      (i & 1 ? "right:0;" : "left:0;") + (i & 2 ? "bottom:0;" : "top:0;");
+    prof.appendChild(d);
+    return d;
+  });
   const local = e => {
-    const r = prof.getBoundingClientRect();
-    return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height];
+    const q = corners.map(d => { const r = d.getBoundingClientRect(); return [r.left, r.top]; });
+    const [[x0, y0], [x1, y1], [x3, y3], [x2, y2]] = q;  // ô vuông đơn vị (0,0)(1,0)(1,1)(0,1) → 4 góc trên màn hình
+    const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
+    let a, b, c = x0, d, e2, f = y0, g = 0, h = 0;
+    if (Math.abs(dx3) < 1e-6 && Math.abs(dy3) < 1e-6) { a = x1 - x0; b = x3 - x0; d = y1 - y0; e2 = y3 - y0; }
+    else {
+      const det = dx1 * dy2 - dx2 * dy1;
+      g = (dx3 * dy2 - dx2 * dy3) / det; h = (dx1 * dy3 - dx3 * dy1) / det;
+      a = x1 - x0 + g * x1; b = x3 - x0 + h * x3; d = y1 - y0 + g * y1; e2 = y3 - y0 + h * y3;
+    }
+    // nghịch đảo ma trận [[a b c][d e f][g h 1]] áp vào điểm màn hình → (u, v) trong ô vuông đơn vị
+    const X = e.clientX, Y = e.clientY;
+    const A = e2 - f * h, B = c * h - b, C = b * f - c * e2, D = f * g - d, E = a - c * g, F = c * d - a * f;
+    const G = d * h - e2 * g, Hh = b * g - a * h, I = a * e2 - b * d;
+    const w = G * X + Hh * Y + I, u = (A * X + B * Y + C) / w, v = (D * X + E * Y + F) / w;
+    return [u * W, v * H];
   };
   const hitCat = (x, y) => cats.find(c => c.state !== "hide" && Math.abs(x - c.x) < 20 * c.size &&
     y > floor - c.jy - 32 * c.size && y < floor - c.jy + 4);
