@@ -2247,8 +2247,19 @@ addEventListener("resize", alignAvatar);
     const w = G * X + Hh * Y + I, u = (A * X + B * Y + C) / w, v = (D * X + E * Y + F) / w;
     return [u * W, v * H];
   };
-  const hitCat = (x, y) => cats.find(c => c.state !== "hide" && Math.abs(x - c.x) < 20 * c.size &&
-    y > floor - c.jy - 32 * c.size && y < floor - c.jy + 4);
+  // Vùng bấm rộng hơn hình mèo một chút (mèo chỉ ~30px, lại hay đi lại): ngang ±26, từ trên tai xuống dưới chân;
+  // trúng nhiều con thì chọn con gần điểm bấm nhất
+  const hitCat = (x, y) => {
+    let best = null, bd = 1e9;
+    for (const c of cats) {
+      if (c.state === "hide") continue;
+      const cy = floor - c.jy - 16 * c.size, dx = Math.abs(x - c.x), dy = y - cy;
+      if (dx > 26 * c.size || dy < -28 * c.size || dy > 22 * c.size) continue;
+      const d = Math.hypot(dx, dy);
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+  };
 
   // Chạm vào mèo: nhảy lên, kêu, bắn tim. Chạm liên tục 5 lần → mèo chạy loạn (zoomies)
   prof.addEventListener("pointerdown", e => {
